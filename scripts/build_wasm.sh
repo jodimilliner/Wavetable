@@ -24,6 +24,7 @@ emcc \
   -s EXPORT_NAME=createSynthModule \
   -s USE_ES6_IMPORT_META=1 \
   -s ENVIRONMENT=web,worker \
+  -s SINGLE_FILE=1 \
   -s ALLOW_MEMORY_GROWTH=1 \
   -s NO_EXIT_RUNTIME=1 \
   -s EXPORTED_FUNCTIONS='["_synth_init","_synth_set_freq","_synth_set_amp","_synth_set_wave","_synth_render","_synth_note_on","_synth_note_off","_synth_shutdown","_malloc","_free"]' \
