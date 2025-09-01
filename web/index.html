@@ -3,11 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Wavetable Synth (Prophet‑style)</title>
+    <title>Wavetable Demo</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="frame">
+    <div id="wavetable-mount"></div>
+    <script>
+      (function loadWavetable(){
+        var mount = document.getElementById('wavetable-mount');
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'wavetable.html', false); // sync to ensure UI is present before main.js init
+          xhr.send(null);
+          if ((xhr.status >= 200 && xhr.status < 300) || (xhr.status === 0 && xhr.responseText)) {
+            mount.outerHTML = xhr.responseText;
+          } else {
+            mount.innerHTML = '<div class="muted">Failed to load wavetable UI</div>';
+          }
+        } catch (e) {
+          mount.innerHTML = '<div class="muted">Error loading wavetable UI</div>';
+        }
+      })();
+    </script>
       <div class="header">
         <div class="brand">Prophet‑5</div>
         <div class="header-center">
@@ -100,7 +117,6 @@
       </div>
       <div style="margin-top:12px;" class="muted">Status: <span id="status"></span></div>
       <div id="log" style="display:none;"></div>
-    </div>
     <script src="main.js"></script>
   </body>
   </html>
