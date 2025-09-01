@@ -61,7 +61,6 @@ async function init() {
   const fm2mod = document.getElementById('fm2mod');
   const fm2idx = document.getElementById('fm2idx');
   const presetSelect = document.getElementById('presetSelect');
-  const savePresetBtn = document.getElementById('savePreset');
   function sendOsc1() {
     const w = wave1 ? (parseInt(wave1.value,10)|0) : 0;
     const d = det1 ? (+det1.value) : 0;
@@ -355,20 +354,23 @@ async function init() {
     Object.keys(map).sort().forEach(name => {
       const opt = document.createElement('option'); opt.value = name; opt.textContent = name; presetSelect.appendChild(opt);
     });
+    // Add trailing "Save preset…" action
+    const sep = document.createElement('option'); sep.disabled = true; sep.textContent = '──────────';
+    const saveOpt = document.createElement('option'); saveOpt.value = '__save__'; saveOpt.textContent = 'Save preset…';
+    presetSelect.appendChild(sep); presetSelect.appendChild(saveOpt);
   }
 
   if (presetSelect) {
     populatePresetSelect();
     presetSelect.addEventListener('change', () => {
-      const name = presetSelect.value; const map = loadPresetMap();
-      if (name && map[name]) applyState(map[name]);
-    });
-  }
-  if (savePresetBtn) {
-    savePresetBtn.addEventListener('click', () => {
-      const name = prompt('Preset name:'); if (!name) return;
-      const map = loadPresetMap(); map[name] = collectState(); savePresetMap(map);
-      populatePresetSelect(); if (presetSelect) presetSelect.value = name;
+      const val = presetSelect.value; const map = loadPresetMap();
+      if (val === '__save__') {
+        const name = prompt('Preset name:');
+        if (name) { map[name] = collectState(); savePresetMap(map); populatePresetSelect(); presetSelect.value = name; }
+        else { populatePresetSelect(); presetSelect.value = ''; }
+        return;
+      }
+      if (val && map[val]) applyState(map[val]);
     });
   }
 
