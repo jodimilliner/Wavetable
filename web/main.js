@@ -54,21 +54,41 @@ async function init() {
   const det2 = document.getElementById('det2');
   const gain1 = document.getElementById('gain1');
   const gain2 = document.getElementById('gain2');
+  const fm1car = document.getElementById('fm1car');
+  const fm1mod = document.getElementById('fm1mod');
+  const fm1idx = document.getElementById('fm1idx');
+  const fm2car = document.getElementById('fm2car');
+  const fm2mod = document.getElementById('fm2mod');
+  const fm2idx = document.getElementById('fm2idx');
   function sendOsc1() {
     const w = wave1 ? (parseInt(wave1.value,10)|0) : 0;
     const d = det1 ? (+det1.value) : 0;
     const g = gain1 ? (+gain1.value) : undefined;
-    node.port.postMessage({ type: 'osc1', wave: w, detune: d, gain: g });
+    const fm_car = fm1car ? (+fm1car.value) : undefined;
+    const fm_mod = fm1mod ? (+fm1mod.value) : undefined;
+    const fm_indx = fm1idx ? (+fm1idx.value) : undefined;
+    node.port.postMessage({ type: 'osc1', wave: w, detune: d, gain: g, fm_car, fm_mod, fm_indx });
     const dv = document.getElementById('det1Val'); if (dv) dv.textContent = `${d.toFixed(2)} st`;
     const gv = document.getElementById('gain1Val'); if (gv && gain1) gv.textContent = `${(+gain1.value).toFixed(2)}`;
+    const set = (id, val, suf='') => { const el = document.getElementById(id); if (el) el.textContent = `${val.toFixed(2)}${suf}`; };
+    if (fm1car) set('fm1carVal', +fm1car.value);
+    if (fm1mod) set('fm1modVal', +fm1mod.value);
+    if (fm1idx) set('fm1idxVal', +fm1idx.value);
   }
   function sendOsc2() {
     const w = wave2 ? (parseInt(wave2.value,10)|0) : 0;
     const d = det2 ? (+det2.value) : 0;
     const g = gain2 ? (+gain2.value) : undefined;
-    node.port.postMessage({ type: 'osc2', wave: w, detune: d, gain: g });
+    const fm_car = fm2car ? (+fm2car.value) : undefined;
+    const fm_mod = fm2mod ? (+fm2mod.value) : undefined;
+    const fm_indx = fm2idx ? (+fm2idx.value) : undefined;
+    node.port.postMessage({ type: 'osc2', wave: w, detune: d, gain: g, fm_car, fm_mod, fm_indx });
     const dv = document.getElementById('det2Val'); if (dv) dv.textContent = `${d.toFixed(2)} st`;
     const gv = document.getElementById('gain2Val'); if (gv && gain2) gv.textContent = `${(+gain2.value).toFixed(2)}`;
+    const set = (id, val, suf='') => { const el = document.getElementById(id); if (el) el.textContent = `${val.toFixed(2)}${suf}`; };
+    if (fm2car) set('fm2carVal', +fm2car.value);
+    if (fm2mod) set('fm2modVal', +fm2mod.value);
+    if (fm2idx) set('fm2idxVal', +fm2idx.value);
   }
   if (wave1) wave1.addEventListener('change', sendOsc1);
   if (wave2) wave2.addEventListener('change', sendOsc2);
@@ -76,6 +96,12 @@ async function init() {
   if (det2) det2.addEventListener('input', sendOsc2);
   if (gain1) gain1.addEventListener('input', sendOsc1);
   if (gain2) gain2.addEventListener('input', sendOsc2);
+  if (fm1car) fm1car.addEventListener('input', sendOsc1);
+  if (fm1mod) fm1mod.addEventListener('input', sendOsc1);
+  if (fm1idx) fm1idx.addEventListener('input', sendOsc1);
+  if (fm2car) fm2car.addEventListener('input', sendOsc2);
+  if (fm2mod) fm2mod.addEventListener('input', sendOsc2);
+  if (fm2idx) fm2idx.addEventListener('input', sendOsc2);
 
   // Piano keyboard mapping starting at 'A' for C4: A W S E D F T G Y H U J K
   const KEY_TO_MIDI = { 'a':60,'w':61,'s':62,'e':63,'d':64,'f':65,'t':66,'g':67,'y':68,'h':69,'u':70,'j':71,'k':72 };
@@ -245,3 +271,13 @@ async function init() {
 }
 
 window.addEventListener('load', init);
+  // Toggle FM controls visibility based on wave selections
+  function updateFmVisibility() {
+    const w1 = wave1 ? (parseInt(wave1.value,10)|0) : 0;
+    const w2 = wave2 ? (parseInt(wave2.value,10)|0) : 0;
+    document.querySelectorAll('.fm1').forEach(el => { el.style.display = (w1 === 4 ? 'flex' : 'none');});
+    document.querySelectorAll('.fm2').forEach(el => { el.style.display = (w2 === 4 ? 'flex' : 'none');});
+  }
+  if (wave1) wave1.addEventListener('change', updateFmVisibility);
+  if (wave2) wave2.addEventListener('change', updateFmVisibility);
+  updateFmVisibility();

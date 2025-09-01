@@ -50,6 +50,10 @@ void synth_set_detune2(float semi);
 void synth_set_gain1(float gain);
 void synth_set_gain2(float gain);
 
+// FM controls
+void synth_fm1(float car, float mod, float index);
+void synth_fm2(float car, float mod, float index);
+
 // Cleanup resources
 void synth_shutdown();
 }

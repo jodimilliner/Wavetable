@@ -26,6 +26,12 @@ class SynthProcessor extends AudioWorkletProcessor {
             if (typeof m.wave === 'number') this.mod.ccall('synth_set_wave1', 'void', ['number'], [m.wave|0]);
             if (typeof m.detune === 'number') this.mod.ccall('synth_set_detune1', 'void', ['number'], [m.detune]);
             if (typeof m.gain === 'number') this.mod.ccall('synth_set_gain1', 'void', ['number'], [m.gain]);
+            if (typeof m.fm_car === 'number' || typeof m.fm_mod === 'number' || typeof m.fm_indx === 'number') {
+              const car = typeof m.fm_car === 'number' ? m.fm_car : 1.0;
+              const mod = typeof m.fm_mod === 'number' ? m.fm_mod : 1.0;
+              const idx = typeof m.fm_indx === 'number' ? m.fm_indx : 2.0;
+              this.mod.ccall('synth_fm1', 'void', ['number','number','number'], [car, mod, idx]);
+            }
             this.port.postMessage({ type: 'log', msg: `osc1 -> wave:${m.wave} det:${m.detune}` });
             break;
           }
@@ -33,6 +39,12 @@ class SynthProcessor extends AudioWorkletProcessor {
             if (typeof m.wave === 'number') this.mod.ccall('synth_set_wave2', 'void', ['number'], [m.wave|0]);
             if (typeof m.detune === 'number') this.mod.ccall('synth_set_detune2', 'void', ['number'], [m.detune]);
             if (typeof m.gain === 'number') this.mod.ccall('synth_set_gain2', 'void', ['number'], [m.gain]);
+            if (typeof m.fm_car === 'number' || typeof m.fm_mod === 'number' || typeof m.fm_indx === 'number') {
+              const car = typeof m.fm_car === 'number' ? m.fm_car : 1.0;
+              const mod = typeof m.fm_mod === 'number' ? m.fm_mod : 1.0;
+              const idx = typeof m.fm_indx === 'number' ? m.fm_indx : 2.0;
+              this.mod.ccall('synth_fm2', 'void', ['number','number','number'], [car, mod, idx]);
+            }
             this.port.postMessage({ type: 'log', msg: `osc2 -> wave:${m.wave} det:${m.detune}` });
             break;
           }

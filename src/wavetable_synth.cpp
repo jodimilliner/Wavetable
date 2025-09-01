@@ -41,6 +41,9 @@ namespace {
     float g_detune2 = 0.0f;
     float g_gain1 = 0.5f;
     float g_gain2 = 0.5f;
+    // FM defaults per oscillator
+    float g_fm1_car = 1.0f, g_fm1_mod = 1.0f, g_fm1_indx = 2.0f;
+    float g_fm2_car = 1.0f, g_fm2_mod = 1.0f, g_fm2_indx = 2.0f;
 
     struct Voice {
         sp_osc* osc1 = nullptr;
@@ -148,14 +151,14 @@ namespace {
             if (!g_lfo_ft) { sp_ftbl_create(g_sp, &g_lfo_ft, 2048); sp_gen_sine(g_sp, g_lfo_ft); }
             sp_fosc_init(g_sp, g_voices[i].fosc1, g_lfo_ft);
             g_voices[i].fosc1->amp = 1.0f; g_voices[i].fosc1->freq = 440.0f;
-            g_voices[i].fosc1->car = 1.0f; g_voices[i].fosc1->mod = 1.0f; g_voices[i].fosc1->indx = 2.0f;
+            g_voices[i].fosc1->car = g_fm1_car; g_voices[i].fosc1->mod = g_fm1_mod; g_voices[i].fosc1->indx = g_fm1_indx;
         }
         if (!g_voices[i].fosc2) {
             sp_fosc_create(&g_voices[i].fosc2);
             if (!g_lfo_ft) { sp_ftbl_create(g_sp, &g_lfo_ft, 2048); sp_gen_sine(g_sp, g_lfo_ft); }
             sp_fosc_init(g_sp, g_voices[i].fosc2, g_lfo_ft);
             g_voices[i].fosc2->amp = 1.0f; g_voices[i].fosc2->freq = 440.0f;
-            g_voices[i].fosc2->car = 1.0f; g_voices[i].fosc2->mod = 1.0f; g_voices[i].fosc2->indx = 2.0f;
+            g_voices[i].fosc2->car = g_fm2_car; g_voices[i].fosc2->mod = g_fm2_mod; g_voices[i].fosc2->indx = g_fm2_indx;
         }
         // Sync env params
         g_voices[i].env->atk = g_env_atk;
@@ -468,4 +471,22 @@ void synth_set_detune1(float semi) { g_detune1 = semi; }
 void synth_set_detune2(float semi) { g_detune2 = semi; }
 void synth_set_gain1(float g) { g_gain1 = g; }
 void synth_set_gain2(float g) { g_gain2 = g; }
+
+// FM parameter setters (per-oscillator)
+void synth_fm1(float car, float mod, float indx) {
+    g_fm1_car = car; g_fm1_mod = mod; g_fm1_indx = indx;
+    for (int i = 0; i < g_poly_n; ++i) if (g_voices[i].fosc1) {
+        g_voices[i].fosc1->car = g_fm1_car;
+        g_voices[i].fosc1->mod = g_fm1_mod;
+        g_voices[i].fosc1->indx = g_fm1_indx;
+    }
+}
+void synth_fm2(float car, float mod, float indx) {
+    g_fm2_car = car; g_fm2_mod = mod; g_fm2_indx = indx;
+    for (int i = 0; i < g_poly_n; ++i) if (g_voices[i].fosc2) {
+        g_voices[i].fosc2->car = g_fm2_car;
+        g_voices[i].fosc2->mod = g_fm2_mod;
+        g_voices[i].fosc2->indx = g_fm2_indx;
+    }
+}
 }
