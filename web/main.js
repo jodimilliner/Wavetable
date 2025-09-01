@@ -7,6 +7,40 @@ async function init() {
   node = new AudioWorkletNode(audioCtx, 'synth-processor');
   node.connect(audioCtx.destination);
 
+  const status = document.getElementById('status');
+  const logEl = document.getElementById('log');
+  function log(msg) {
+    console.log('[Synth]', msg);
+    if (!logEl) return;
+    const time = new Date().toLocaleTimeString();
+    const line = document.createElement('div');
+    line.textContent = `${time} ${msg}`;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function setStatus(extra = '') {
+    if (!status) return;
+    status.textContent = `AudioContext: ${audioCtx.state} @ ${audioCtx.sampleRate} Hz ${extra}`;
+  }
+  setStatus();
+  audioCtx.addEventListener('statechange', () => setStatus());
+
+  // Messages from worklet (logs/metrics)
+  node.port.onmessage = (ev) => {
+    const m = ev.data || {};
+    if (m.type === 'ready') {
+      log(`Worklet ready, sr=${m.sr}`);
+    } else if (m.type === 'log') {
+      log(m.msg);
+    } else if (m.type === 'error') {
+      log(`ERROR: ${m.msg}`);
+    } else if (m.type === 'metrics') {
+      const { rms, frames } = m;
+      setStatus(`| frames=${frames} rms=${rms.toFixed(4)}`);
+    }
+  };
+
   // UI controls
   const waveSel = document.getElementById('wave');
   waveSel.addEventListener('change', () => {
@@ -91,6 +125,16 @@ async function init() {
         window.removeEventListener('mouseup', up);
       };
       window.addEventListener('mouseup', up);
+    });
+  }
+
+  // Explicit start button for autoplay policies
+  const startBtn = document.getElementById('start');
+  if (startBtn) {
+    startBtn.addEventListener('click', async () => {
+      await audioCtx.resume();
+      setStatus();
+      log('AudioContext resumed via Start button');
     });
   }
 }

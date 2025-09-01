@@ -14,6 +14,7 @@ class SynthProcessor extends AudioWorkletProcessor {
     this.mod = null;
     this.ptr = 0;
     this.ptrCapacity = 0;
+    this.processCount = 0;
 
     // Handle messages from main thread (UI)
     this.port.onmessage = (ev) => {
@@ -23,15 +24,19 @@ class SynthProcessor extends AudioWorkletProcessor {
         switch (m.type) {
           case 'wave':
             this.mod.ccall('synth_set_wave', 'void', ['number'], [m.value|0]);
+            this.port.postMessage({ type: 'log', msg: `wave -> ${m.value|0}` });
             break;
           case 'note_on':
             this.mod.ccall('synth_note_on', 'void', ['number', 'number'], [m.midi|0, m.velocity ?? 1.0]);
+            this.port.postMessage({ type: 'log', msg: `note_on -> midi:${m.midi|0} vel:${m.velocity??1.0}` });
             break;
           case 'note_off':
             this.mod.ccall('synth_note_off', 'void', [], []);
+            this.port.postMessage({ type: 'log', msg: 'note_off' });
             break;
           case 'amp':
             this.mod.ccall('synth_set_amp', 'void', ['number'], [m.value || 0]);
+            this.port.postMessage({ type: 'log', msg: `amp -> ${m.value||0}` });
             break;
         }
       } catch (e) {
@@ -56,9 +61,11 @@ class SynthProcessor extends AudioWorkletProcessor {
       this.ptrCapacity = 2048; // frames
       this.ptr = this.mod._malloc(this.ptrCapacity * 4);
       this.ready = true;
+      this.port.postMessage({ type: 'ready', sr });
     }).catch(() => {
       // stay silent on failure
       this.ready = false;
+      this.port.postMessage({ type: 'error', msg: 'Failed to init WASM in worklet' });
     });
   }
 
@@ -89,9 +96,16 @@ class SynthProcessor extends AudioWorkletProcessor {
         output[ch][i] = s;
       }
     }
+
+    // lightweight diagnostics (rms) every ~8 callbacks
+    if ((this.processCount++ & 7) === 0) {
+      let sum = 0;
+      for (let i = 0; i < frames; i++) { const v = heap[i]; sum += v*v; }
+      const rms = Math.sqrt(sum / frames);
+      this.port.postMessage({ type: 'metrics', frames, rms });
+    }
     return true;
   }
 }
 
 registerProcessor('synth-processor', SynthProcessor);
-

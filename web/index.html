@@ -20,6 +20,10 @@
     <p>Soundpipe DSP compiled to WebAssembly. Real-time via AudioWorklet.</p>
 
     <div class="row">
+      <button id="start">Start Audio</button>
+    </div>
+
+    <div class="row">
       <label for="wave">Waveform</label>
       <select id="wave">
         <option value="0">Sine</option>
@@ -48,6 +52,9 @@
         <div class="key white" data-key="," data-midi="72">,</div>
       </div>
     </div>
+
+    <div class="row"><strong>Status:</strong> <span id="status"></span></div>
+    <div id="log" style="height: 140px; overflow: auto; background: #111; color: #9f9; padding: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;"></div>
 
     <script src="main.js"></script>
   </body>
