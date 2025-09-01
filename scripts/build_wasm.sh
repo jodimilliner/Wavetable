@@ -20,6 +20,7 @@ emcc \
   -I"$SP_DIR/h" \
   -s WASM=1 \
   -s MODULARIZE=1 \
+  -s EXPORT_NAME=createSynthModule \
   -s ENVIRONMENT=web \
   -s ALLOW_MEMORY_GROWTH=1 \
   -s NO_EXIT_RUNTIME=1 \

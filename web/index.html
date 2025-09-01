@@ -13,7 +13,7 @@
   </head>
   <body>
     <h1>Wavetable Synth</h1>
-    <p>Soundpipe DSP compiled to WebAssembly. Render-on-demand demo.</p>
+    <p>Soundpipe DSP compiled to WebAssembly. Real-time via AudioWorklet.</p>
 
     <div class="row">
       <label for="wave">Waveform</label>
@@ -26,25 +26,25 @@
     </div>
 
     <div class="row">
-      <label for="freq">Frequency</label>
-      <input id="freq" type="range" min="50" max="2000" value="440" step="1" />
-      <span id="freqVal">440 Hz</span>
+      <label>Keyboard</label>
+      <div id="piano" style="display:flex;gap:2px;user-select:none;">
+        <!-- Simple one-octave piano from C4 to C5 mapped to Z S X D C V G B H N J M ,  -->
+        <div class="key white" data-key="z" data-midi="60">Z</div>
+        <div class="key black" data-key="s" data-midi="61">S</div>
+        <div class="key white" data-key="x" data-midi="62">X</div>
+        <div class="key black" data-key="d" data-midi="63">D</div>
+        <div class="key white" data-key="c" data-midi="64">C</div>
+        <div class="key white" data-key="v" data-midi="65">V</div>
+        <div class="key black" data-key="g" data-midi="66">G</div>
+        <div class="key white" data-key="b" data-midi="67">B</div>
+        <div class="key black" data-key="h" data-midi="68">H</div>
+        <div class="key white" data-key="n" data-midi="69">N</div>
+        <div class="key black" data-key="j" data-midi="70">J</div>
+        <div class="key white" data-key="m" data-midi="71">M</div>
+        <div class="key white" data-key="," data-midi="72">,</div>
+      </div>
     </div>
 
-    <div class="row">
-      <label for="dur">Duration</label>
-      <input id="dur" type="range" min="0.1" max="3" value="1" step="0.1" />
-      <span id="durVal">1.0 s</span>
-    </div>
-
-    <div class="row">
-      <button id="play">Play Tone</button>
-      <button id="a4">Play A4</button>
-      <button id="c5">Play C5</button>
-    </div>
-
-    <script src="dist/synth.js"></script>
     <script src="main.js"></script>
   </body>
   </html>
-
