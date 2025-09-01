@@ -17,6 +17,7 @@ emcc \
   "$SP_DIR/modules/osc.c" \
   "$SP_DIR/modules/adsr.c" \
   "$SP_DIR/modules/moogladder.c" \
+  "$SP_DIR/modules/fosc.c" \
   -DNO_LIBSNDFILE=1 \
   -I"$ROOT_DIR/include/sp_compat" \
   -I"$SP_DIR/h" \
