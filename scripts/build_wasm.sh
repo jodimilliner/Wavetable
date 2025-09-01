@@ -13,6 +13,7 @@ emcc \
   "$ROOT_DIR/src/wavetable_synth.cpp" \
   "$SP_DIR/modules/base.c" \
   "$SP_DIR/modules/ftbl.c" \
+  "$SP_DIR/modules/randmt.c" \
   "$SP_DIR/modules/osc.c" \
   -DNO_LIBSNDFILE=1 \
   -I"$ROOT_DIR/include/sp_compat" \

@@ -6,7 +6,7 @@
 
 #include "../../deps/soundpipe/h/base.h"
 #include "../../deps/soundpipe/h/ftbl.h"
+#include "../../deps/soundpipe/h/randmt.h"
 #include "../../deps/soundpipe/h/osc.h"
 
 #endif // SOUNDPIPE_H
-
