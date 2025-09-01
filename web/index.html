@@ -34,7 +34,17 @@
   </head>
   <body>
     <div class="frame">
-      <div class="header"><div class="brand">Prophet‑5</div><div class="model">Wavetable | Soundpipe + WASM</div></div>
+      <div class="header">
+        <div class="brand">Prophet‑5</div>
+        <div class="model" style="display:flex; align-items:center; gap:8px;">
+          <label for="presetSelect" class="muted" style="width:auto;">Presets</label>
+          <select id="presetSelect" style="min-width:180px; background:#111; color:#e6e6e6; border:1px solid #333; border-radius:4px; padding:4px 6px;">
+            <option value="">— Select preset —</option>
+          </select>
+          <button id="savePreset" style="background:#222; color:#e6e6e6; border:1px solid #333; border-radius:4px; padding:6px 10px; cursor:pointer;">Save Preset</button>
+          <span class="model">Wavetable | Soundpipe + WASM</span>
+        </div>
+      </div>
       <div class="panels">
         <div class="panel" style="grid-column: span 4;">
           <h3>Osc 1</h3>
