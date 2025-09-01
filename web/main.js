@@ -147,10 +147,18 @@ async function init() {
   function sendFilter() {
     if (!fc || !res) return;
     node.port.postMessage({ type: 'filter', cutoff: +fc.value, resonance: +res.value });
+    const fcVal = document.getElementById('fcVal');
+    if (fcVal) fcVal.textContent = `${(+fc.value/1000).toFixed(2)} kHz`;
+    const resVal = document.getElementById('resVal');
+    if (resVal) resVal.textContent = (+res.value).toFixed(2);
   }
   function sendFamt() { if (famt) node.port.postMessage({ type: 'famt', amount: +famt.value }); }
+  if (famt) famt.addEventListener('input', () => {
+    sendFamt();
+    const famtVal = document.getElementById('famtVal');
+    if (famtVal) famtVal.textContent = `${+famt.value >= 0 ? '+' : ''}${(+famt.value).toFixed(0)} Hz`;
+  });
   [fc, res].forEach(el => el && el.addEventListener('input', sendFilter));
-  if (famt) famt.addEventListener('input', sendFamt);
 
   // Filter ADSR controls
   const fatk = document.getElementById('fatk');
@@ -160,6 +168,11 @@ async function init() {
   function sendFenv() {
     if (!fatk || !fdec || !fsus || !frel) return;
     node.port.postMessage({ type: 'fenv', attack: +fatk.value, decay: +fdec.value, sustain: +fsus.value, release: +frel.value });
+    const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    set('fatkVal', `${(+fatk.value).toFixed(3)} s`);
+    set('fdecVal', `${(+fdec.value).toFixed(3)} s`);
+    set('fsusVal', `${(+fsus.value).toFixed(2)}`);
+    set('frelVal', `${(+frel.value).toFixed(3)} s`);
   }
   [fatk, fdec, fsus, frel].forEach(el => el && el.addEventListener('input', sendFenv));
 
@@ -168,8 +181,21 @@ async function init() {
   const lfoa = document.getElementById('lfoamnt');
   function sendLfo() {
     node.port.postMessage({ type: 'lfo', rate: +lfor.value, amount: +lfoa.value });
+    const rv = document.getElementById('lforVal'); if (rv) rv.textContent = `${(+lfor.value).toFixed(2)} Hz`;
+    const av = document.getElementById('lfoaVal'); if (av) av.textContent = `${(+lfoa.value).toFixed(1)} st`;
   }
   [lfor, lfoa].forEach(el => el && el.addEventListener('input', sendLfo));
+
+  // Amp ADSR readouts
+  function sendEnvAndUpdate() {
+    sendEnv();
+    const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    set('atkVal', `${(+atk.value).toFixed(3)} s`);
+    set('decVal', `${(+dec.value).toFixed(3)} s`);
+    set('susVal', `${(+sus.value).toFixed(2)}`);
+    set('relVal', `${(+rel.value).toFixed(3)} s`);
+  }
+  [atk, dec, sus, rel].forEach(el => el && el.addEventListener('input', sendEnvAndUpdate));
 
   // Explicit start button for autoplay policies
   const startBtn = document.getElementById('start');
