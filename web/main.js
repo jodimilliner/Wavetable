@@ -163,6 +163,14 @@ async function init() {
   }
   [fatk, fdec, fsus, frel].forEach(el => el && el.addEventListener('input', sendFenv));
 
+  // LFO (pitch) controls
+  const lfor = document.getElementById('lforate');
+  const lfoa = document.getElementById('lfoamnt');
+  function sendLfo() {
+    node.port.postMessage({ type: 'lfo', rate: +lfor.value, amount: +lfoa.value });
+  }
+  [lfor, lfoa].forEach(el => el && el.addEventListener('input', sendLfo));
+
   // Explicit start button for autoplay policies
   const startBtn = document.getElementById('start');
   if (startBtn) {

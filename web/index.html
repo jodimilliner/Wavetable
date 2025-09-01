@@ -64,6 +64,14 @@
     </div>
 
     <div class="row">
+      <label>LFO (Pitch)</label>
+      <div>
+        Rate <input id="lforate" type="range" min="0" max="20" step="0.01" value="5" style="width:200px" />
+        Amount (semi) <input id="lfoamnt" type="range" min="-12" max="12" step="0.1" value="0" style="width:200px" />
+      </div>
+    </div>
+
+    <div class="row">
       <label for="poly">Polyphony</label>
       <input id="poly" type="range" min="1" max="16" step="1" value="8" />
       <span id="polyVal">8 voices</span>

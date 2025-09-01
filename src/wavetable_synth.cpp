@@ -27,12 +27,19 @@ namespace {
     float g_fenv_atk = 0.005f, g_fenv_dec = 0.15f, g_fenv_sus = 0.0f, g_fenv_rel = 0.25f;
     float g_fenv_amt = 2000.0f; // Hz added to cutoff when filter env=1
 
+    // Master pitch LFO (sine)
+    sp_ftbl* g_lfo_ft = nullptr;
+    sp_osc*  g_lfo = nullptr;
+    float g_lfo_rate = 5.0f;      // Hz
+    float g_lfo_amt_semi = 0.0f;  // semitones peak (±)
+
     struct Voice {
         sp_osc* osc = nullptr;
         sp_adsr* env = nullptr;
         sp_moogladder* vcf = nullptr;
         sp_adsr* fenv = nullptr;
         int midi = -1;
+        float base_hz = 440.0f;
         float vel = 0.0f;
         float gate = 0.0f; // 1 = on, 0 = off
         bool active = false;
@@ -113,20 +120,24 @@ namespace {
             if (!g_voices[i].fenv) {
                 sp_adsr_create(&g_voices[i].fenv);
                 sp_adsr_init(g_sp, g_voices[i].fenv);
-            }
-            // Sync env params
-            g_voices[i].env->atk = g_env_atk;
-            g_voices[i].env->dec = g_env_dec;
-            g_voices[i].env->sus = g_env_sus;
-            g_voices[i].env->rel = g_env_rel;
-            // Sync filter params
-            g_voices[i].vcf->freq = g_fcut;
-            g_voices[i].vcf->res = g_fres;
-            g_voices[i].fenv->atk = g_fenv_atk;
-            g_voices[i].fenv->dec = g_fenv_dec;
-            g_voices[i].fenv->sus = g_fenv_sus;
-            g_voices[i].fenv->rel = g_fenv_rel;
         }
+        // Sync env params
+        g_voices[i].env->atk = g_env_atk;
+        g_voices[i].env->dec = g_env_dec;
+        g_voices[i].env->sus = g_env_sus;
+        g_voices[i].env->rel = g_env_rel;
+        // Sync filter params
+        g_voices[i].vcf->freq = g_fcut;
+        g_voices[i].vcf->res = g_fres;
+        g_voices[i].fenv->atk = g_fenv_atk;
+        g_voices[i].fenv->dec = g_fenv_dec;
+        g_voices[i].fenv->sus = g_fenv_sus;
+        g_voices[i].fenv->rel = g_fenv_rel;
+    }
+    // LFO init
+    if (!g_lfo_ft) sp_ftbl_create(g_sp, &g_lfo_ft, 2048), sp_gen_sine(g_sp, g_lfo_ft);
+    if (!g_lfo) { sp_osc_create(&g_lfo); sp_osc_init(g_sp, g_lfo, g_lfo_ft, 0); g_lfo->amp = 1.0f; }
+    g_lfo->freq = g_lfo_rate;
     }
 
     void free_all_voices() {
@@ -213,12 +224,26 @@ void synth_render(float* out_ptr, int frames) {
     if (!out_ptr || !g_sp) return;
     float zero = 0.0f, one = 1.0f;
     for (int i = 0; i < frames; ++i) {
+        // Compute master pitch LFO value and factor
+        float lfo_val = 0.0f;
+        if (g_lfo) sp_osc_compute(g_sp, g_lfo, nullptr, &lfo_val);
+        // semitone modulation -> frequency multiplier
+        float pitch_mul = 1.0f;
+        if (g_lfo_amt_semi != 0.0f) {
+            float semi = lfo_val * g_lfo_amt_semi; // -amt..+amt
+            pitch_mul = powf(2.0f, semi / 12.0f);
+        }
         float mix = 0.0f;
         for (int v = 0; v < g_poly_n; ++v) {
             Voice &vc = g_voices[v];
             if (!vc.active && vc.gate <= 0.f) continue;
             float s = 0.0f;
-            if (vc.osc) sp_osc_compute(g_sp, vc.osc, nullptr, &s);
+            if (vc.osc) {
+                // Apply LFO to oscillator frequency based on base note
+                float base = vc.base_hz > 0.f ? vc.base_hz : (vc.midi >= 0 ? sp_midi2cps((float)vc.midi) : 440.0f);
+                vc.osc->freq = base * pitch_mul;
+                sp_osc_compute(g_sp, vc.osc, nullptr, &s);
+            }
             float gate_in = vc.gate > 0.f ? one : zero;
             // Filter envelope
             float fenv = 0.0f;
@@ -258,6 +283,7 @@ void synth_note_on(int midi_note, float velocity) {
     int idx = find_free_voice();
     Voice &vc = g_voices[idx];
     if (vc.osc) vc.osc->freq = freq;
+    vc.base_hz = freq;
     // Update envelope params in case globals changed
     if (vc.env) { vc.env->atk = g_env_atk; vc.env->dec = g_env_dec; vc.env->sus = g_env_sus; vc.env->rel = g_env_rel; }
     if (vc.fenv) { vc.fenv->atk = g_fenv_atk; vc.fenv->dec = g_fenv_dec; vc.fenv->sus = g_fenv_sus; vc.fenv->rel = g_fenv_rel; }
@@ -288,6 +314,8 @@ void synth_shutdown() {
         sp_ftbl_destroy(&g_ft);
         g_ft = nullptr;
     }
+    if (g_lfo) { sp_osc_destroy(&g_lfo); g_lfo = nullptr; }
+    if (g_lfo_ft) { sp_ftbl_destroy(&g_lfo_ft); g_lfo_ft = nullptr; }
     if (g_sp) {
         sp_destroy(&g_sp);
         g_sp = nullptr;
@@ -314,6 +342,16 @@ void synth_set_poly(int n) {
     if (n < 1) n = 1; if (n > MAX_VOICES) n = MAX_VOICES;
     g_poly_n = n;
     init_voices_if_needed();
+}
+
+// LFO controls
+void synth_lfo_set(float rate_hz) {
+    g_lfo_rate = rate_hz;
+    if (g_lfo) g_lfo->freq = g_lfo_rate;
+}
+
+void synth_lfo_amount_semi(float amt_semi) {
+    g_lfo_amt_semi = amt_semi;
 }
 
 // Filter controls

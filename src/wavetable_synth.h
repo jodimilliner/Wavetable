@@ -38,6 +38,10 @@ void synth_filter_env(float attack, float decay, float sustain, float release);
 // Filter env amount in Hz (added to cutoff when env=1)
 void synth_filter_env_amount(float amount_hz);
 
+// LFO: master pitch modulation
+void synth_lfo_set(float rate_hz);
+void synth_lfo_amount_semi(float amount_semitones);
+
 // Cleanup resources
 void synth_shutdown();
 }

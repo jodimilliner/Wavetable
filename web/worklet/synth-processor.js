@@ -57,6 +57,16 @@ class SynthProcessor extends AudioWorkletProcessor {
             this.port.postMessage({ type: 'log', msg: `famt -> ${amt} Hz` });
             break;
           }
+          case 'lfo': {
+            if (typeof m.rate === 'number') {
+              this.mod.ccall('synth_lfo_set', 'void', ['number'], [m.rate]);
+            }
+            if (typeof m.amount === 'number') {
+              this.mod.ccall('synth_lfo_amount_semi', 'void', ['number'], [m.amount]);
+            }
+            this.port.postMessage({ type: 'log', msg: `lfo -> rate:${m.rate}Hz amt:${m.amount} semi` });
+            break;
+          }
           case 'env': {
             const a = +m.attack||0, d = +m.decay||0, s = +m.sustain||0, r = +m.release||0;
             this.mod.ccall('synth_set_env', 'void', ['number','number','number','number'], [a,d,s,r]);
