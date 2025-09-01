@@ -230,6 +230,38 @@ async function init() {
   const lfor = document.getElementById('lforate');
   const lfoa = document.getElementById('lfoamnt');
   const lfod = document.getElementById('lfodest');
+  function updateLfoRange() {
+    if (!lfoa || !lfod) return;
+    const dest = parseInt(lfod.value, 10) | 0;
+    // Adjust amount slider range/step by destination for usable resolution
+    switch (dest) {
+      case 0: // pitch (semitones)
+        lfoa.min = '-24'; lfoa.max = '24'; lfoa.step = '0.1';
+        break;
+      case 1: // cutoff (Hz)
+        lfoa.min = '-8000'; lfoa.max = '8000'; lfoa.step = '1';
+        break;
+      case 2: // master gain
+      case 4: // osc1 gain
+      case 5: // osc2 gain
+        lfoa.min = '-1'; lfoa.max = '1'; lfoa.step = '0.01';
+        break;
+      case 3: // resonance
+        lfoa.min = '-1'; lfoa.max = '1'; lfoa.step = '0.01';
+        break;
+      case 6: // fm1 index
+      case 7: // fm2 index
+        lfoa.min = '-10'; lfoa.max = '10'; lfoa.step = '0.05';
+        break;
+      default:
+        lfoa.min = '-12'; lfoa.max = '12'; lfoa.step = '0.1';
+    }
+    // Ensure current value is within new range
+    let v = parseFloat(lfoa.value);
+    const min = parseFloat(lfoa.min), max = parseFloat(lfoa.max);
+    if (v < min) v = min; if (v > max) v = max;
+    lfoa.value = String(v);
+  }
   function sendLfo() {
     const dest = lfod ? (parseInt(lfod.value,10)|0) : 0;
     node.port.postMessage({ type: 'lfo', rate: +lfor.value, amount: +lfoa.value, dest });
@@ -244,7 +276,10 @@ async function init() {
       av.textContent = `${(+lfoa.value).toFixed(2)} ${unit}`.trim();
     }
   }
-  [lfor, lfoa, lfod].forEach(el => el && el.addEventListener('input', sendLfo));
+  [lfor, lfoa].forEach(el => el && el.addEventListener('input', sendLfo));
+  if (lfod) lfod.addEventListener('change', () => { updateLfoRange(); sendLfo(); });
+  // Initialize range based on default destination
+  updateLfoRange();
 
   // Amp ADSR readouts
   function sendEnvAndUpdate() {
