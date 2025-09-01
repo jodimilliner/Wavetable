@@ -1,0 +1,10 @@
+.DS_Store
+/build
+/dist
+/web/dist
+*.o
+*.a
+*.wasm
+*.js
+*.data
+*.dSYM
