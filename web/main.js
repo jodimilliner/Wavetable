@@ -137,6 +137,18 @@ async function init() {
       log('AudioContext resumed via Start button');
     });
   }
+
+  const testBtn = document.getElementById('test');
+  if (testBtn) {
+    testBtn.addEventListener('click', async () => {
+      await audioCtx.resume();
+      setStatus();
+      log('Test A4');
+      node.port.postMessage({ type: 'wave', value: parseInt(document.getElementById('wave').value, 10) | 0 });
+      node.port.postMessage({ type: 'note_on', midi: 69, velocity: 1.0 });
+      setTimeout(() => node.port.postMessage({ type: 'note_off' }), 500);
+    });
+  }
 }
 
 window.addEventListener('load', init);
