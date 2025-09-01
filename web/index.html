@@ -36,10 +36,16 @@
     <div class="frame">
       <div class="header"><div class="brand">Prophet‑5</div><div class="model">Wavetable | Soundpipe + WASM</div></div>
       <div class="panels">
-        <div class="panel" style="grid-column: span 3;">
-          <h3>Oscillator</h3>
-          <div class="row"><label>Wave</label><select id="wave"><option value="0">Sine</option><option value="1">Saw</option><option value="2">Square</option><option value="3">Triangle</option></select></div>
+        <div class="panel" style="grid-column: span 4;">
+          <h3>Osc 1</h3>
+          <div class="row"><label>Wave</label><select id="wave1"><option value="0">Sine</option><option value="1">Saw</option><option value="2">Square</option><option value="3">Triangle</option></select></div>
+          <div class="row"><label>Detune</label><input id="det1" type="range" min="-24" max="24" step="0.01" value="0" /><span id="det1Val" class="kv">0.00 st</span></div>
           <div class="row"><label>Poly</label><input id="poly" type="range" min="1" max="16" step="1" value="8" /><span id="polyVal" class="kv">8 voices</span></div>
+        </div>
+        <div class="panel" style="grid-column: span 4;">
+          <h3>Osc 2</h3>
+          <div class="row"><label>Wave</label><select id="wave2"><option value="0">Sine</option><option value="1">Saw</option><option value="2">Square</option><option value="3">Triangle</option></select></div>
+          <div class="row"><label>Detune</label><input id="det2" type="range" min="-24" max="24" step="0.01" value="0" /><span id="det2Val" class="kv">0.00 st</span></div>
         </div>
         <div class="panel" style="grid-column: span 5;">
           <h3>Filter</h3>

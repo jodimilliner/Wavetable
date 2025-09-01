@@ -18,9 +18,22 @@ class SynthProcessor extends AudioWorkletProcessor {
       try {
         switch (m.type) {
           case 'wave':
+            // Backwards-compat: set both oscillators' wave
             this.mod.ccall('synth_set_wave', 'void', ['number'], [m.value|0]);
             this.port.postMessage({ type: 'log', msg: `wave -> ${m.value|0}` });
             break;
+          case 'osc1': {
+            if (typeof m.wave === 'number') this.mod.ccall('synth_set_wave1', 'void', ['number'], [m.wave|0]);
+            if (typeof m.detune === 'number') this.mod.ccall('synth_set_detune1', 'void', ['number'], [m.detune]);
+            this.port.postMessage({ type: 'log', msg: `osc1 -> wave:${m.wave} det:${m.detune}` });
+            break;
+          }
+          case 'osc2': {
+            if (typeof m.wave === 'number') this.mod.ccall('synth_set_wave2', 'void', ['number'], [m.wave|0]);
+            if (typeof m.detune === 'number') this.mod.ccall('synth_set_detune2', 'void', ['number'], [m.detune]);
+            this.port.postMessage({ type: 'log', msg: `osc2 -> wave:${m.wave} det:${m.detune}` });
+            break;
+          }
           case 'note_on':
             this.mod.ccall('synth_note_on', 'void', ['number', 'number'], [m.midi|0, m.velocity ?? 1.0]);
             this.port.postMessage({ type: 'log', msg: `note_on -> midi:${m.midi|0} vel:${m.velocity??1.0}` });

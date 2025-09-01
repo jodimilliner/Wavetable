@@ -16,7 +16,8 @@ extern "C" {
 // Minimal Soundpipe state for a single-voice wavetable synth
 namespace {
     sp_data* g_sp = nullptr;
-    sp_ftbl* g_ft = nullptr;
+    sp_ftbl* g_ft1 = nullptr;
+    sp_ftbl* g_ft2 = nullptr;
     int g_table_size = 2048;
     float g_master_amp = 0.4f;
     float g_env_atk = 0.01f, g_env_dec = 0.1f, g_env_sus = 0.8f, g_env_rel = 0.2f;
@@ -33,8 +34,14 @@ namespace {
     float g_lfo_rate = 5.0f;      // Hz
     float g_lfo_amt_semi = 0.0f;  // semitones peak (±)
 
+    int g_wave1 = 0;
+    int g_wave2 = 0;
+    float g_detune1 = 0.0f;
+    float g_detune2 = 0.0f;
+
     struct Voice {
-        sp_osc* osc = nullptr;
+        sp_osc* osc1 = nullptr;
+        sp_osc* osc2 = nullptr;
         sp_adsr* env = nullptr;
         sp_moogladder* vcf = nullptr;
         sp_adsr* fenv = nullptr;
@@ -56,10 +63,10 @@ namespace {
         }
     }
 
-    void rebuild_table_sine() {
+    void rebuild_table_sine(sp_ftbl** pft) {
         if (!g_sp) return;
-        if (!g_ft) sp_ftbl_create(g_sp, &g_ft, g_table_size);
-        sp_gen_sine(g_sp, g_ft);
+        if (!*pft) sp_ftbl_create(g_sp, pft, g_table_size);
+        sp_gen_sine(g_sp, *pft);
     }
 
     // Build a harmonic series string like: "1 0.5 0.3333 ..." up to N partials
@@ -80,34 +87,42 @@ namespace {
         return s;
     }
 
-    void rebuild_table_saw(unsigned int partials = 32) {
+    void rebuild_table_saw(sp_ftbl** pft, unsigned int partials = 32) {
         if (!g_sp) return;
-        if (!g_ft) sp_ftbl_create(g_sp, &g_ft, g_table_size);
+        if (!*pft) sp_ftbl_create(g_sp, pft, g_table_size);
         auto coeffs = harmonic_series(partials, /*odd_only*/false, /*square*/false);
-        sp_gen_sinesum(g_sp, g_ft, coeffs.c_str());
+        sp_gen_sinesum(g_sp, *pft, coeffs.c_str());
     }
 
-    void rebuild_table_square(unsigned int partials = 32) {
+    void rebuild_table_square(sp_ftbl** pft, unsigned int partials = 32) {
         if (!g_sp) return;
-        if (!g_ft) sp_ftbl_create(g_sp, &g_ft, g_table_size);
+        if (!*pft) sp_ftbl_create(g_sp, pft, g_table_size);
         auto coeffs = harmonic_series(partials, /*odd_only*/true, /*square*/true);
-        sp_gen_sinesum(g_sp, g_ft, coeffs.c_str());
+        sp_gen_sinesum(g_sp, *pft, coeffs.c_str());
     }
 
-    void rebuild_table_triangle() {
+    void rebuild_table_triangle(sp_ftbl** pft) {
         if (!g_sp) return;
-        if (!g_ft) sp_ftbl_create(g_sp, &g_ft, g_table_size);
-        sp_gen_triangle(g_sp, g_ft);
+        if (!*pft) sp_ftbl_create(g_sp, pft, g_table_size);
+        sp_gen_triangle(g_sp, *pft);
     }
 
     void init_voices_if_needed() {
-        if (!g_sp || !g_ft) return;
+        if (!g_sp) return;
+        if (!g_ft1) rebuild_table_sine(&g_ft1);
+        if (!g_ft2) rebuild_table_sine(&g_ft2);
         for (int i = 0; i < g_poly_n; ++i) {
-            if (!g_voices[i].osc) {
-                sp_osc_create(&g_voices[i].osc);
-                sp_osc_init(g_sp, g_voices[i].osc, g_ft, 0);
-                g_voices[i].osc->amp = 1.0f;
-                g_voices[i].osc->freq = 440.0f;
+            if (!g_voices[i].osc1) {
+                sp_osc_create(&g_voices[i].osc1);
+                sp_osc_init(g_sp, g_voices[i].osc1, g_ft1, 0);
+                g_voices[i].osc1->amp = 1.0f;
+                g_voices[i].osc1->freq = 440.0f;
+            }
+            if (!g_voices[i].osc2) {
+                sp_osc_create(&g_voices[i].osc2);
+                sp_osc_init(g_sp, g_voices[i].osc2, g_ft2, 0);
+                g_voices[i].osc2->amp = 1.0f;
+                g_voices[i].osc2->freq = 440.0f;
             }
             if (!g_voices[i].env) {
                 sp_adsr_create(&g_voices[i].env);
@@ -142,7 +157,8 @@ namespace {
 
     void free_all_voices() {
         for (int i = 0; i < MAX_VOICES; ++i) {
-            if (g_voices[i].osc) { sp_osc_destroy(&g_voices[i].osc); }
+            if (g_voices[i].osc1) { sp_osc_destroy(&g_voices[i].osc1); }
+            if (g_voices[i].osc2) { sp_osc_destroy(&g_voices[i].osc2); }
             if (g_voices[i].env) { sp_adsr_destroy(&g_voices[i].env); }
             if (g_voices[i].vcf) { sp_moogladder_destroy(&g_voices[i].vcf); }
             if (g_voices[i].fenv) { sp_adsr_destroy(&g_voices[i].fenv); }
@@ -167,7 +183,8 @@ void synth_init(int sample_rate, int table_size) {
     ensure_sp();
     g_sp->sr = sample_rate;
     g_table_size = table_size > 64 ? table_size : 2048;
-    rebuild_table_sine();
+    rebuild_table_sine(&g_ft1);
+    rebuild_table_sine(&g_ft2);
     g_master_amp = 0.4f;
     g_env_atk = 0.01f; g_env_dec = 0.1f; g_env_sus = 0.8f; g_env_rel = 0.2f;
     g_poly_n = g_poly_n < 1 ? 1 : (g_poly_n > MAX_VOICES ? MAX_VOICES : g_poly_n);
@@ -176,7 +193,10 @@ void synth_init(int sample_rate, int table_size) {
 
 void synth_set_freq(float freq) {
     // Set all active voices to the same freq (legacy support)
-    for (int i = 0; i < g_poly_n; ++i) if (g_voices[i].osc) g_voices[i].osc->freq = freq;
+    for (int i = 0; i < g_poly_n; ++i) {
+        if (g_voices[i].osc1) g_voices[i].osc1->freq = freq;
+        if (g_voices[i].osc2) g_voices[i].osc2->freq = freq;
+    }
 }
 
 void synth_set_amp(float amp) {
@@ -185,39 +205,9 @@ void synth_set_amp(float amp) {
 
 void synth_set_wave(int type) {
     if (!g_sp) return;
-    // Recreate/overwrite the function table
-    if (g_ft) {
-        sp_ftbl_destroy(&g_ft);
-        g_ft = nullptr;
-    }
-    sp_ftbl_create(g_sp, &g_ft, g_table_size);
-    switch (type) {
-        case 1: // saw
-            rebuild_table_saw();
-            break;
-        case 2: // square
-            rebuild_table_square();
-            break;
-        case 3: // triangle
-            rebuild_table_triangle();
-            break;
-        case 0: // sine
-        default:
-            rebuild_table_sine();
-            break;
-    }
-    // Re-init voice oscillators with new table
-    for (int i = 0; i < g_poly_n; ++i) {
-        if (g_voices[i].osc) {
-            float amp = g_voices[i].osc->amp;
-            float freq = g_voices[i].osc->freq;
-            sp_osc_destroy(&g_voices[i].osc);
-            sp_osc_create(&g_voices[i].osc);
-            sp_osc_init(g_sp, g_voices[i].osc, g_ft, 0);
-            g_voices[i].osc->amp = amp;
-            g_voices[i].osc->freq = freq;
-        }
-    }
+    // Backwards compatibility: set both oscillators
+    synth_set_wave1(type);
+    synth_set_wave2(type);
 }
 
 void synth_render(float* out_ptr, int frames) {
@@ -237,13 +227,20 @@ void synth_render(float* out_ptr, int frames) {
         for (int v = 0; v < g_poly_n; ++v) {
             Voice &vc = g_voices[v];
             if (!vc.active && vc.gate <= 0.f) continue;
-            float s = 0.0f;
-            if (vc.osc) {
-                // Apply LFO to oscillator frequency based on base note
-                float base = vc.base_hz > 0.f ? vc.base_hz : (vc.midi >= 0 ? sp_midi2cps((float)vc.midi) : 440.0f);
-                vc.osc->freq = base * pitch_mul;
-                sp_osc_compute(g_sp, vc.osc, nullptr, &s);
+            float s1 = 0.0f, s2 = 0.0f;
+            // Apply LFO and detune per oscillator
+            float base = vc.base_hz > 0.f ? vc.base_hz : (vc.midi >= 0 ? sp_midi2cps((float)vc.midi) : 440.0f);
+            if (vc.osc1) {
+                float det1 = powf(2.0f, g_detune1 / 12.0f);
+                vc.osc1->freq = base * pitch_mul * det1;
+                sp_osc_compute(g_sp, vc.osc1, nullptr, &s1);
             }
+            if (vc.osc2) {
+                float det2 = powf(2.0f, g_detune2 / 12.0f);
+                vc.osc2->freq = base * pitch_mul * det2;
+                sp_osc_compute(g_sp, vc.osc2, nullptr, &s2);
+            }
+            float s = (s1 + s2) * 0.5f;
             float gate_in = vc.gate > 0.f ? one : zero;
             // Filter envelope
             float fenv = 0.0f;
@@ -282,7 +279,8 @@ void synth_note_on(int midi_note, float velocity) {
     float freq = sp_midi2cps(static_cast<float>(midi_note));
     int idx = find_free_voice();
     Voice &vc = g_voices[idx];
-    if (vc.osc) vc.osc->freq = freq;
+    if (vc.osc1) vc.osc1->freq = freq;
+    if (vc.osc2) vc.osc2->freq = freq;
     vc.base_hz = freq;
     // Update envelope params in case globals changed
     if (vc.env) { vc.env->atk = g_env_atk; vc.env->dec = g_env_dec; vc.env->sus = g_env_sus; vc.env->rel = g_env_rel; }
@@ -310,10 +308,8 @@ void synth_note_off() {
 
 void synth_shutdown() {
     free_all_voices();
-    if (g_ft) {
-        sp_ftbl_destroy(&g_ft);
-        g_ft = nullptr;
-    }
+    if (g_ft1) { sp_ftbl_destroy(&g_ft1); g_ft1 = nullptr; }
+    if (g_ft2) { sp_ftbl_destroy(&g_ft2); g_ft2 = nullptr; }
     if (g_lfo) { sp_osc_destroy(&g_lfo); g_lfo = nullptr; }
     if (g_lfo_ft) { sp_ftbl_destroy(&g_lfo_ft); g_lfo_ft = nullptr; }
     if (g_sp) {
@@ -371,4 +367,46 @@ void synth_filter_env(float atk, float dec, float sus, float rel) {
 }
 
 void synth_filter_env_amount(float amt_hz) { g_fenv_amt = amt_hz; }
+}
+
+// New oscillator controls
+extern "C" {
+void synth_set_wave1(int type) {
+    if (!g_sp) return;
+    if (g_ft1) { sp_ftbl_destroy(&g_ft1); g_ft1 = nullptr; }
+    switch (type) {
+        case 1: rebuild_table_saw(&g_ft1); break;
+        case 2: rebuild_table_square(&g_ft1); break;
+        case 3: rebuild_table_triangle(&g_ft1); break;
+        case 0: default: rebuild_table_sine(&g_ft1); break;
+    }
+    g_wave1 = type;
+    for (int i = 0; i < g_poly_n; ++i) if (g_voices[i].osc1) {
+        float a = g_voices[i].osc1->amp, f = g_voices[i].osc1->freq;
+        sp_osc_destroy(&g_voices[i].osc1);
+        sp_osc_create(&g_voices[i].osc1);
+        sp_osc_init(g_sp, g_voices[i].osc1, g_ft1, 0);
+        g_voices[i].osc1->amp = a; g_voices[i].osc1->freq = f;
+    }
+}
+void synth_set_wave2(int type) {
+    if (!g_sp) return;
+    if (g_ft2) { sp_ftbl_destroy(&g_ft2); g_ft2 = nullptr; }
+    switch (type) {
+        case 1: rebuild_table_saw(&g_ft2); break;
+        case 2: rebuild_table_square(&g_ft2); break;
+        case 3: rebuild_table_triangle(&g_ft2); break;
+        case 0: default: rebuild_table_sine(&g_ft2); break;
+    }
+    g_wave2 = type;
+    for (int i = 0; i < g_poly_n; ++i) if (g_voices[i].osc2) {
+        float a = g_voices[i].osc2->amp, f = g_voices[i].osc2->freq;
+        sp_osc_destroy(&g_voices[i].osc2);
+        sp_osc_create(&g_voices[i].osc2);
+        sp_osc_init(g_sp, g_voices[i].osc2, g_ft2, 0);
+        g_voices[i].osc2->amp = a; g_voices[i].osc2->freq = f;
+    }
+}
+void synth_set_detune1(float semi) { g_detune1 = semi; }
+void synth_set_detune2(float semi) { g_detune2 = semi; }
 }

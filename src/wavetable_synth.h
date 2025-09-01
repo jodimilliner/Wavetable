@@ -42,6 +42,12 @@ void synth_filter_env_amount(float amount_hz);
 void synth_lfo_set(float rate_hz);
 void synth_lfo_amount_semi(float amount_semitones);
 
+// Oscillator controls (two oscillators)
+void synth_set_wave1(int type);
+void synth_set_wave2(int type);
+void synth_set_detune1(float semi);
+void synth_set_detune2(float semi);
+
 // Cleanup resources
 void synth_shutdown();
 }

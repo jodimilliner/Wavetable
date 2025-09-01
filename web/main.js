@@ -47,11 +47,27 @@ async function init() {
     }
   };
 
-  // UI controls
-  const waveSel = document.getElementById('wave');
-  waveSel.addEventListener('change', () => {
-    node.port.postMessage({ type: 'wave', value: parseInt(waveSel.value, 10) | 0 });
-  });
+  // UI controls - Oscillators
+  const wave1 = document.getElementById('wave1');
+  const wave2 = document.getElementById('wave2');
+  const det1 = document.getElementById('det1');
+  const det2 = document.getElementById('det2');
+  function sendOsc1() {
+    const w = wave1 ? (parseInt(wave1.value,10)|0) : 0;
+    const d = det1 ? (+det1.value) : 0;
+    node.port.postMessage({ type: 'osc1', wave: w, detune: d });
+    const dv = document.getElementById('det1Val'); if (dv) dv.textContent = `${d.toFixed(2)} st`;
+  }
+  function sendOsc2() {
+    const w = wave2 ? (parseInt(wave2.value,10)|0) : 0;
+    const d = det2 ? (+det2.value) : 0;
+    node.port.postMessage({ type: 'osc2', wave: w, detune: d });
+    const dv = document.getElementById('det2Val'); if (dv) dv.textContent = `${d.toFixed(2)} st`;
+  }
+  if (wave1) wave1.addEventListener('change', sendOsc1);
+  if (wave2) wave2.addEventListener('change', sendOsc2);
+  if (det1) det1.addEventListener('input', sendOsc1);
+  if (det2) det2.addEventListener('input', sendOsc2);
 
   // Piano keyboard mapping starting at 'A' for C4: A W S E D F T G Y H U J K
   const KEY_TO_MIDI = { 'a':60,'w':61,'s':62,'e':63,'d':64,'f':65,'t':66,'g':67,'y':68,'h':69,'u':70,'j':71,'k':72 };
