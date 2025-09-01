@@ -34,6 +34,9 @@ namespace {
     sp_osc*  g_lfo = nullptr;
     float g_lfo_rate = 5.0f;      // Hz
     float g_lfo_amt_semi = 0.0f;  // semitones peak (±)
+    // Flexible LFO routing
+    int   g_lfo_dest = 0;         // 0=pitch,1=cutoff,2=masterAmp,3=res,4=osc1Gain,5=osc2Gain,6=fm1Index,7=fm2Index
+    float g_lfo_amt = 0.0f;       // generic amount; units depend on destination
 
     int g_wave1 = 0;
     int g_wave2 = 0;
@@ -243,12 +246,19 @@ void synth_render(float* out_ptr, int frames) {
         // Compute master pitch LFO value and factor
         float lfo_val = 0.0f;
         if (g_lfo) sp_osc_compute(g_sp, g_lfo, nullptr, &lfo_val);
-        // semitone modulation -> frequency multiplier
+        // LFO routing
         float pitch_mul = 1.0f;
-        if (g_lfo_amt_semi != 0.0f) {
-            float semi = lfo_val * g_lfo_amt_semi; // -amt..+amt
+        if (g_lfo_dest == 0) { // pitch (semitones)
+            float semi = lfo_val * (g_lfo_amt != 0.0f ? g_lfo_amt : g_lfo_amt_semi);
             pitch_mul = powf(2.0f, semi / 12.0f);
         }
+        float cutoff_lfo = (g_lfo_dest == 1) ? (g_lfo_amt * lfo_val) : 0.0f; // Hz
+        float master_amp_mod = (g_lfo_dest == 2) ? (g_lfo_amt * lfo_val) : 0.0f; // linear
+        float res_mod = (g_lfo_dest == 3) ? (g_lfo_amt * lfo_val) : 0.0f; // linear
+        float osc1_gain_mod = (g_lfo_dest == 4) ? (g_lfo_amt * lfo_val) : 0.0f;
+        float osc2_gain_mod = (g_lfo_dest == 5) ? (g_lfo_amt * lfo_val) : 0.0f;
+        float fm1_idx_mod = (g_lfo_dest == 6) ? (g_lfo_amt * lfo_val) : 0.0f;
+        float fm2_idx_mod = (g_lfo_dest == 7) ? (g_lfo_amt * lfo_val) : 0.0f;
         float mix = 0.0f;
         for (int v = 0; v < g_poly_n; ++v) {
             Voice &vc = g_voices[v];
@@ -274,19 +284,25 @@ void synth_render(float* out_ptr, int frames) {
                 vc.fosc2->freq = base * pitch_mul * det2;
                 sp_fosc_compute(g_sp, vc.fosc2, nullptr, &s2);
             }
-            float s = s1 * g_gain1 + s2 * g_gain2;
+            float g1 = g_gain1 + osc1_gain_mod; if (g1 < 0.f) g1 = 0.f; if (g1 > 2.f) g1 = 2.f;
+            float g2 = g_gain2 + osc2_gain_mod; if (g2 < 0.f) g2 = 0.f; if (g2 > 2.f) g2 = 2.f;
+            // FM index modulation
+            if (vc.fosc1) { float idx = g_fm1_indx + fm1_idx_mod; if (idx < 0.f) idx = 0.f; vc.fosc1->indx = idx; }
+            if (vc.fosc2) { float idx = g_fm2_indx + fm2_idx_mod; if (idx < 0.f) idx = 0.f; vc.fosc2->indx = idx; }
+            float s = s1 * g1 + s2 * g2;
             float gate_in = vc.gate > 0.f ? one : zero;
             // Filter envelope
             float fenv = 0.0f;
             if (vc.fenv) sp_adsr_compute(g_sp, vc.fenv, &gate_in, &fenv);
             // Modulate per-voice filter cutoff
             if (vc.vcf) {
-                float cutoff = g_fcut + g_fenv_amt * fenv;
+                float cutoff = g_fcut + g_fenv_amt * fenv + cutoff_lfo;
                 if (cutoff < 20.0f) cutoff = 20.0f;
                 float nyq = 0.5f * (float)g_sp->sr;
                 if (cutoff > nyq - 100.0f) cutoff = nyq - 100.0f;
                 vc.vcf->freq = cutoff;
-                float r = (g_fres < 0.f ? 0.f : (g_fres > 1.f ? 1.f : g_fres));
+                float rbase = g_fres + res_mod; if (rbase < 0.f) rbase = 0.f; if (rbase > 1.f) rbase = 1.f;
+                float r = rbase;
                 vc.vcf->res = r;
                 float fs = 0.0f;
                 sp_moogladder_compute(g_sp, vc.vcf, &s, &fs);
@@ -295,7 +311,8 @@ void synth_render(float* out_ptr, int frames) {
             // Amplitude envelope
             float env = 0.0f;
             if (vc.env) sp_adsr_compute(g_sp, vc.env, &gate_in, &env);
-            mix += s * env * (vc.vel * g_master_amp);
+            float mg = g_master_amp + master_amp_mod; if (mg < 0.f) mg = 0.f; if (mg > 2.f) mg = 2.f;
+            mix += s * env * (vc.vel * mg);
             // Auto-deactivate if gate is off and env is near zero
             if (vc.gate <= 0.f && env < 1e-4f) {
                 vc.active = false;
@@ -385,6 +402,9 @@ void synth_lfo_set(float rate_hz) {
 void synth_lfo_amount_semi(float amt_semi) {
     g_lfo_amt_semi = amt_semi;
 }
+
+void synth_lfo_dest(int dest) { g_lfo_dest = dest; }
+void synth_lfo_amount(float amount) { g_lfo_amt = amount; }
 
 // Filter controls
 void synth_filter_set(float cutoff_hz, float resonance) {

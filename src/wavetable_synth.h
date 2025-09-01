@@ -41,6 +41,8 @@ void synth_filter_env_amount(float amount_hz);
 // LFO: master pitch modulation
 void synth_lfo_set(float rate_hz);
 void synth_lfo_amount_semi(float amount_semitones);
+void synth_lfo_dest(int dest);
+void synth_lfo_amount(float amount);
 
 // Oscillator controls (two oscillators)
 void synth_set_wave1(int type);

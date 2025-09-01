@@ -88,10 +88,13 @@ class SynthProcessor extends AudioWorkletProcessor {
             if (typeof m.rate === 'number') {
               this.mod.ccall('synth_lfo_set', 'void', ['number'], [m.rate]);
             }
-            if (typeof m.amount === 'number') {
-              this.mod.ccall('synth_lfo_amount_semi', 'void', ['number'], [m.amount]);
+            if (typeof m.dest === 'number') {
+              this.mod.ccall('synth_lfo_dest', 'void', ['number'], [m.dest|0]);
             }
-            this.port.postMessage({ type: 'log', msg: `lfo -> rate:${m.rate}Hz amt:${m.amount} semi` });
+            if (typeof m.amount === 'number') {
+              this.mod.ccall('synth_lfo_amount', 'void', ['number'], [m.amount]);
+            }
+            this.port.postMessage({ type: 'log', msg: `lfo -> rate:${m.rate} dest:${m.dest} amt:${m.amount}` });
             break;
           }
           case 'env': {

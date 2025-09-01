@@ -229,12 +229,22 @@ async function init() {
   // LFO (pitch) controls
   const lfor = document.getElementById('lforate');
   const lfoa = document.getElementById('lfoamnt');
+  const lfod = document.getElementById('lfodest');
   function sendLfo() {
-    node.port.postMessage({ type: 'lfo', rate: +lfor.value, amount: +lfoa.value });
+    const dest = lfod ? (parseInt(lfod.value,10)|0) : 0;
+    node.port.postMessage({ type: 'lfo', rate: +lfor.value, amount: +lfoa.value, dest });
     const rv = document.getElementById('lforVal'); if (rv) rv.textContent = `${(+lfor.value).toFixed(2)} Hz`;
-    const av = document.getElementById('lfoaVal'); if (av) av.textContent = `${(+lfoa.value).toFixed(1)} st`;
+    const av = document.getElementById('lfoaVal');
+    if (av) {
+      let unit = 'st';
+      if (dest === 1) unit = 'Hz';
+      else if (dest === 2 || dest === 4 || dest === 5) unit = '';
+      else if (dest === 3) unit = '';
+      else if (dest === 6 || dest === 7) unit = ' idx';
+      av.textContent = `${(+lfoa.value).toFixed(2)} ${unit}`.trim();
+    }
   }
-  [lfor, lfoa].forEach(el => el && el.addEventListener('input', sendLfo));
+  [lfor, lfoa, lfod].forEach(el => el && el.addEventListener('input', sendLfo));
 
   // Amp ADSR readouts
   function sendEnvAndUpdate() {
