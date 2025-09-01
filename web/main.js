@@ -53,12 +53,8 @@ async function init() {
     node.port.postMessage({ type: 'wave', value: parseInt(waveSel.value, 10) | 0 });
   });
 
-  // Piano keyboard mapping: Z S X D C V G B H N J M ,
-  const KEY_TO_MIDI = {
-    'z': 60, 's': 61, 'x': 62, 'd': 63, 'c': 64,
-    'v': 65, 'g': 66, 'b': 67, 'h': 68, 'n': 69,
-    'j': 70, 'm': 71, ',': 72
-  };
+  // Piano keyboard mapping starting at 'A' for C4: A W S E D F T G Y H U J K
+  const KEY_TO_MIDI = { 'a':60,'w':61,'s':62,'e':63,'d':64,'f':65,'t':66,'g':67,'y':68,'h':69,'u':70,'j':71,'k':72 };
 
   const pressed = new Set();
 
@@ -100,25 +96,21 @@ async function init() {
     if (el) el.classList.remove('down');
   });
 
-  // Mouse interaction with on-screen keys
-  const piano = document.getElementById('piano');
-  if (piano) {
-    piano.addEventListener('mousedown', async (ev) => {
-      const el = ev.target.closest('.key');
-      if (!el) return;
-      const key = el.getAttribute('data-key');
-      const midi = parseInt(el.getAttribute('data-midi'), 10) | 0;
-      el.classList.add('down');
-      await ensureRunning();
-      noteOn(midi, 1.0);
-      const up = () => {
-        el.classList.remove('down');
-        noteOff(midi);
-        window.removeEventListener('mouseup', up);
-      };
-      window.addEventListener('mouseup', up);
-    });
-  }
+  // Mouse interaction with on-screen keys (Prophet-style keyboard)
+  document.addEventListener('mousedown', async (ev) => {
+    const el = ev.target.closest('.white.key, .black.key');
+    if (!el) return;
+    const midi = parseInt(el.getAttribute('data-midi'), 10) | 0;
+    el.classList.add('down');
+    await ensureRunning();
+    noteOn(midi, 1.0);
+    const up = () => {
+      el.classList.remove('down');
+      noteOff(midi);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mouseup', up);
+  });
 
   // Envelope controls
   const atk = document.getElementById('atk');
