@@ -158,7 +158,7 @@ async function init() {
       log('Test A4');
       node.port.postMessage({ type: 'wave', value: parseInt(document.getElementById('wave').value, 10) | 0 });
       node.port.postMessage({ type: 'note_on', midi: 69, velocity: 1.0 });
-      setTimeout(() => node.port.postMessage({ type: 'note_off' }), 500);
+      setTimeout(() => node.port.postMessage({ type: 'note_off', midi: 69 }), 500);
     });
   }
 }
