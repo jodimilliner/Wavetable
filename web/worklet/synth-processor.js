@@ -38,6 +38,25 @@ class SynthProcessor extends AudioWorkletProcessor {
             this.mod.ccall('synth_set_amp', 'void', ['number'], [m.value || 0]);
             this.port.postMessage({ type: 'log', msg: `amp -> ${m.value||0}` });
             break;
+          case 'filter': {
+            const cutoff = +m.cutoff || 0;
+            let res = +m.resonance; if (!Number.isFinite(res)) res = 0;
+            this.mod.ccall('synth_filter_set', 'void', ['number','number'], [cutoff, res]);
+            this.port.postMessage({ type: 'log', msg: `filter -> fc:${cutoff}Hz res:${res}` });
+            break;
+          }
+          case 'fenv': {
+            const a = +m.attack||0, d = +m.decay||0, s = +m.sustain||0, r = +m.release||0;
+            this.mod.ccall('synth_filter_env', 'void', ['number','number','number','number'], [a,d,s,r]);
+            this.port.postMessage({ type: 'log', msg: `fenv -> a:${a} d:${d} s:${s} r:${r}` });
+            break;
+          }
+          case 'famt': {
+            const amt = +m.amount||0;
+            this.mod.ccall('synth_filter_env_amount', 'void', ['number'], [amt]);
+            this.port.postMessage({ type: 'log', msg: `famt -> ${amt} Hz` });
+            break;
+          }
           case 'env': {
             const a = +m.attack||0, d = +m.decay||0, s = +m.sustain||0, r = +m.release||0;
             this.mod.ccall('synth_set_env', 'void', ['number','number','number','number'], [a,d,s,r]);

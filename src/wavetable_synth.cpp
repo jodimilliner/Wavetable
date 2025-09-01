@@ -8,6 +8,7 @@ extern "C" {
 #include "../deps/soundpipe/h/ftbl.h"
 #include "../deps/soundpipe/h/osc.h"
 #include "../deps/soundpipe/h/adsr.h"
+#include "../deps/soundpipe/h/moogladder.h"
 }
 
 #include "wavetable_synth.h"
@@ -19,6 +20,14 @@ namespace {
     int g_table_size = 2048;
     float g_master_amp = 0.4f;
     float g_env_atk = 0.01f, g_env_dec = 0.1f, g_env_sus = 0.8f, g_env_rel = 0.2f;
+
+    // Global filter and its envelope
+    sp_moogladder* g_filt = nullptr;
+    sp_adsr* g_fenv = nullptr;
+    float g_fcut = 1200.0f;  // Hz
+    float g_fres = 0.3f;     // 0..1
+    float g_fenv_atk = 0.005f, g_fenv_dec = 0.15f, g_fenv_sus = 0.0f, g_fenv_rel = 0.25f;
+    float g_fenv_amt = 2000.0f; // Hz added when env=1
 
     struct Voice {
         sp_osc* osc = nullptr;
@@ -103,6 +112,12 @@ namespace {
             g_voices[i].env->sus = g_env_sus;
             g_voices[i].env->rel = g_env_rel;
         }
+        // Global filter
+        if (!g_filt) { sp_moogladder_create(&g_filt); sp_moogladder_init(g_sp, g_filt); }
+        g_filt->freq = g_fcut;
+        g_filt->res = g_fres;
+        if (!g_fenv) { sp_adsr_create(&g_fenv); sp_adsr_init(g_sp, g_fenv); }
+        g_fenv->atk = g_fenv_atk; g_fenv->dec = g_fenv_dec; g_fenv->sus = g_fenv_sus; g_fenv->rel = g_fenv_rel;
     }
 
     void free_all_voices() {
@@ -111,6 +126,8 @@ namespace {
             if (g_voices[i].env) { sp_adsr_destroy(&g_voices[i].env); }
             g_voices[i] = Voice{};
         }
+        if (g_filt) { sp_moogladder_destroy(&g_filt); g_filt = nullptr; }
+        if (g_fenv) { sp_adsr_destroy(&g_fenv); g_fenv = nullptr; }
     }
 
     int find_free_voice() {
@@ -188,6 +205,7 @@ void synth_render(float* out_ptr, int frames) {
     float zero = 0.0f, one = 1.0f;
     for (int i = 0; i < frames; ++i) {
         float mix = 0.0f;
+        bool anyGate = false;
         for (int v = 0; v < g_poly_n; ++v) {
             Voice &vc = g_voices[v];
             if (!vc.active && vc.gate <= 0.f) continue;
@@ -197,6 +215,7 @@ void synth_render(float* out_ptr, int frames) {
             float env = 0.0f;
             if (vc.env) sp_adsr_compute(g_sp, vc.env, &gate_in, &env);
             mix += s * env * (vc.vel * g_master_amp);
+            if (vc.gate > 0.f) anyGate = true;
             // Auto-deactivate if gate is off and env is near zero
             if (vc.gate <= 0.f && env < 1e-4f) {
                 vc.active = false;
@@ -204,7 +223,24 @@ void synth_render(float* out_ptr, int frames) {
                 vc.vel = 0.f;
             }
         }
-        out_ptr[i] = mix;
+        // Filter envelope gate: high if any voice gate is high
+        float fgate = anyGate ? one : zero;
+        float fenv_out = 0.0f;
+        if (g_fenv) sp_adsr_compute(g_sp, g_fenv, &fgate, &fenv_out);
+        // Modulate cutoff and process filter
+        if (g_filt) {
+            float cutoff = g_fcut + g_fenv_amt * fenv_out;
+            if (cutoff < 20.0f) cutoff = 20.0f;
+            float nyq = 0.5f * (float)g_sp->sr;
+            if (cutoff > nyq - 100.0f) cutoff = nyq - 100.0f;
+            g_filt->freq = cutoff;
+            g_filt->res = (g_fres < 0.f ? 0.f : (g_fres > 1.f ? 1.f : g_fres));
+            float fout = 0.0f;
+            sp_moogladder_compute(g_sp, g_filt, &mix, &fout);
+            out_ptr[i] = fout;
+        } else {
+            out_ptr[i] = mix;
+        }
     }
 }
 
@@ -276,4 +312,18 @@ void synth_set_poly(int n) {
     g_poly_n = n;
     init_voices_if_needed();
 }
+
+// Filter controls
+void synth_filter_set(float cutoff_hz, float resonance) {
+    g_fcut = cutoff_hz;
+    g_fres = resonance;
+    if (g_filt) { g_filt->freq = g_fcut; g_filt->res = g_fres; }
+}
+
+void synth_filter_env(float atk, float dec, float sus, float rel) {
+    g_fenv_atk = atk; g_fenv_dec = dec; g_fenv_sus = sus; g_fenv_rel = rel;
+    if (g_fenv) { g_fenv->atk = atk; g_fenv->dec = dec; g_fenv->sus = sus; g_fenv->rel = rel; }
+}
+
+void synth_filter_env_amount(float amt_hz) { g_fenv_amt = amt_hz; }
 }

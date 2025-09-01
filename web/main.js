@@ -140,6 +140,29 @@ async function init() {
     if (pv) pv.textContent = `${n} voices`;
   });
 
+  // Filter controls
+  const fc = document.getElementById('fc');
+  const res = document.getElementById('res');
+  const famt = document.getElementById('famt');
+  function sendFilter() {
+    if (!fc || !res) return;
+    node.port.postMessage({ type: 'filter', cutoff: +fc.value, resonance: +res.value });
+  }
+  function sendFamt() { if (famt) node.port.postMessage({ type: 'famt', amount: +famt.value }); }
+  [fc, res].forEach(el => el && el.addEventListener('input', sendFilter));
+  if (famt) famt.addEventListener('input', sendFamt);
+
+  // Filter ADSR controls
+  const fatk = document.getElementById('fatk');
+  const fdec = document.getElementById('fdec');
+  const fsus = document.getElementById('fsus');
+  const frel = document.getElementById('frel');
+  function sendFenv() {
+    if (!fatk || !fdec || !fsus || !frel) return;
+    node.port.postMessage({ type: 'fenv', attack: +fatk.value, decay: +fdec.value, sustain: +fsus.value, release: +frel.value });
+  }
+  [fatk, fdec, fsus, frel].forEach(el => el && el.addEventListener('input', sendFenv));
+
   // Explicit start button for autoplay policies
   const startBtn = document.getElementById('start');
   if (startBtn) {

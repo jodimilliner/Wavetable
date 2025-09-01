@@ -8,6 +8,7 @@
 #include "../../deps/soundpipe/h/ftbl.h"
 #include "../../deps/soundpipe/h/randmt.h"
 #include "../../deps/soundpipe/h/adsr.h"
+#include "../../deps/soundpipe/h/moogladder.h"
 #include "../../deps/soundpipe/h/osc.h"
 
 #endif // SOUNDPIPE_H

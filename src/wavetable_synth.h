@@ -31,6 +31,13 @@ void synth_set_env(float attack, float decay, float sustain, float release);
 // Polyphony: number of voices (1..16)
 void synth_set_poly(int nvoices);
 
+// Filter: Moog ladder with cutoff (Hz) and resonance (0..1)
+void synth_filter_set(float cutoff_hz, float resonance);
+// Filter envelope ADSR
+void synth_filter_env(float attack, float decay, float sustain, float release);
+// Filter env amount in Hz (added to cutoff when env=1)
+void synth_filter_env_amount(float amount_hz);
+
 // Cleanup resources
 void synth_shutdown();
 }
