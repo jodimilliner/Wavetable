@@ -3,10 +3,6 @@ let node;
 
 async function init() {
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  await audioCtx.audioWorklet.addModule('worklet/synth-processor.js');
-  node = new AudioWorkletNode(audioCtx, 'synth-processor');
-  node.connect(audioCtx.destination);
-
   const status = document.getElementById('status');
   const logEl = document.getElementById('log');
   function log(msg) {
@@ -18,13 +14,23 @@ async function init() {
     logEl.appendChild(line);
     logEl.scrollTop = logEl.scrollHeight;
   }
-
   function setStatus(extra = '') {
     if (!status) return;
     status.textContent = `AudioContext: ${audioCtx.state} @ ${audioCtx.sampleRate} Hz ${extra}`;
   }
   setStatus();
   audioCtx.addEventListener('statechange', () => setStatus());
+
+  try {
+    await audioCtx.audioWorklet.addModule('worklet/synth-processor.js');
+    node = new AudioWorkletNode(audioCtx, 'synth-processor');
+    node.connect(audioCtx.destination);
+  } catch (e) {
+    log('Failed to load worklet: ' + (e && e.message ? e.message : e));
+    setStatus(' | worklet load failed');
+    return;
+  }
+  node.connect(audioCtx.destination);
 
   // Messages from worklet (logs/metrics)
   node.port.onmessage = (ev) => {

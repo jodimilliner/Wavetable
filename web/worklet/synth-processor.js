@@ -1,11 +1,6 @@
 /* AudioWorkletProcessor that pulls audio from the WASM synth. */
-
-// Load the Emscripten JS glue in the worklet global scope
-// dist/ is one level up from worklet/
-importScripts('../dist/synth.js');
-
-// With EXPORT_NAME=createSynthModule we get a global factory function
-// named createSynthModule in this scope after importScripts.
+// ESM import of the Emscripten factory (built with EXPORT_ES6=1)
+import createSynthModule from '../dist/synth.js';
 
 class SynthProcessor extends AudioWorkletProcessor {
   constructor() {
@@ -46,15 +41,8 @@ class SynthProcessor extends AudioWorkletProcessor {
 
     // Instantiate the WASM module inside the worklet
     // Ensure the .wasm path is resolved relative to dist/
-    const opts = {
-      locateFile: (path) => path.endsWith('.wasm') ? `../dist/${path}` : path
-    };
-    // eslint-disable-next-line no-undef
-    const ready = (typeof createSynthModule === 'function')
-      ? createSynthModule(opts)
-      : (typeof Module === 'function' ? Module(opts) : Promise.reject(new Error('No module factory')));
-
-    ready.then((mod) => {
+    const opts = {};
+    createSynthModule(opts).then((mod) => {
       this.mod = mod;
       const sr = sampleRate | 0; // global in AW scope
       this.mod.ccall('synth_init', 'void', ['number', 'number'], [sr, 2048]);
