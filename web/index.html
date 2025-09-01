@@ -9,6 +9,10 @@
       .row { margin: 0.5rem 0; }
       label { display: inline-block; width: 120px; }
       button { margin-right: 0.5rem; }
+      .key { width: 36px; height: 120px; border: 1px solid #333; display: flex; align-items: flex-end; justify-content: center; font-size: 12px; box-sizing: border-box; }
+      .key.white { background: #fff; color: #000; position: relative; z-index: 1; }
+      .key.black { background: #111; color: #fff; height: 80px; width: 26px; margin-left: -13px; margin-right: -13px; z-index: 2; border-color: #000; }
+      .key.down { outline: 2px solid #4f8; filter: brightness(1.1); }
     </style>
   </head>
   <body>
