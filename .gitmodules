@@ -1,0 +1,3 @@
+[submodule "deps/soundpipe"]
+	path = deps/soundpipe
+	url = https://github.com/PaulBatchelor/Soundpipe.git
