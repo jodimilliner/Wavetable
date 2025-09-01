@@ -26,12 +26,27 @@ class SynthProcessor extends AudioWorkletProcessor {
             this.port.postMessage({ type: 'log', msg: `note_on -> midi:${m.midi|0} vel:${m.velocity??1.0}` });
             break;
           case 'note_off':
-            this.mod.ccall('synth_note_off', 'void', [], []);
-            this.port.postMessage({ type: 'log', msg: 'note_off' });
+            if (typeof m.midi === 'number') {
+              this.mod.ccall('synth_note_off_midi', 'void', ['number'], [m.midi|0]);
+              this.port.postMessage({ type: 'log', msg: `note_off -> midi:${m.midi|0}` });
+            } else {
+              this.mod.ccall('synth_note_off', 'void', [], []);
+              this.port.postMessage({ type: 'log', msg: 'note_off (all)' });
+            }
             break;
           case 'amp':
             this.mod.ccall('synth_set_amp', 'void', ['number'], [m.value || 0]);
             this.port.postMessage({ type: 'log', msg: `amp -> ${m.value||0}` });
+            break;
+          case 'env': {
+            const a = +m.attack||0, d = +m.decay||0, s = +m.sustain||0, r = +m.release||0;
+            this.mod.ccall('synth_set_env', 'void', ['number','number','number','number'], [a,d,s,r]);
+            this.port.postMessage({ type: 'log', msg: `env -> a:${a} d:${d} s:${s} r:${r}` });
+            break;
+          }
+          case 'poly':
+            this.mod.ccall('synth_set_poly', 'void', ['number'], [m.value|0]);
+            this.port.postMessage({ type: 'log', msg: `poly -> ${m.value|0}` });
             break;
         }
       } catch (e) {

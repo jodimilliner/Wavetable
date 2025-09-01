@@ -35,6 +35,22 @@
     </div>
 
     <div class="row">
+      <label>ADSR</label>
+      <div>
+        A <input id="atk" type="range" min="0" max="2" step="0.005" value="0.01" style="width:140px" />
+        D <input id="dec" type="range" min="0" max="2" step="0.005" value="0.10" style="width:140px" />
+        S <input id="sus" type="range" min="0" max="1" step="0.01" value="0.80" style="width:140px" />
+        R <input id="rel" type="range" min="0" max="3" step="0.005" value="0.20" style="width:140px" />
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="poly">Polyphony</label>
+      <input id="poly" type="range" min="1" max="16" step="1" value="8" />
+      <span id="polyVal">8 voices</span>
+    </div>
+
+    <div class="row">
       <label>Keyboard</label>
       <div id="piano" style="display:flex;gap:2px;user-select:none;">
         <!-- Simple one-octave piano from C4 to C5 mapped to Z S X D C V G B H N J M ,  -->

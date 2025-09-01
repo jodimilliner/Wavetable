@@ -7,6 +7,7 @@ extern "C" {
 #include "../deps/soundpipe/h/base.h"
 #include "../deps/soundpipe/h/ftbl.h"
 #include "../deps/soundpipe/h/osc.h"
+#include "../deps/soundpipe/h/adsr.h"
 }
 
 #include "wavetable_synth.h"
@@ -15,8 +16,23 @@ extern "C" {
 namespace {
     sp_data* g_sp = nullptr;
     sp_ftbl* g_ft = nullptr;
-    sp_osc*  g_osc = nullptr;
     int g_table_size = 2048;
+    float g_master_amp = 0.4f;
+    float g_env_atk = 0.01f, g_env_dec = 0.1f, g_env_sus = 0.8f, g_env_rel = 0.2f;
+
+    struct Voice {
+        sp_osc* osc = nullptr;
+        sp_adsr* env = nullptr;
+        int midi = -1;
+        float vel = 0.0f;
+        float gate = 0.0f; // 1 = on, 0 = off
+        bool active = false;
+    };
+
+    constexpr int MAX_VOICES = 16;
+    int g_poly_n = 8;
+    Voice g_voices[MAX_VOICES];
+    int g_voice_rr = 0; // round-robin index for stealing
 
     void ensure_sp() {
         if (!g_sp) {
@@ -68,13 +84,42 @@ namespace {
         sp_gen_triangle(g_sp, g_ft);
     }
 
-    void init_osc_if_needed() {
-        if (!g_osc && g_sp && g_ft) {
-            sp_osc_create(&g_osc);
-            sp_osc_init(g_sp, g_osc, g_ft, 0);
-            g_osc->amp = 0.2f;
-            g_osc->freq = 440.0f;
+    void init_voices_if_needed() {
+        if (!g_sp || !g_ft) return;
+        for (int i = 0; i < g_poly_n; ++i) {
+            if (!g_voices[i].osc) {
+                sp_osc_create(&g_voices[i].osc);
+                sp_osc_init(g_sp, g_voices[i].osc, g_ft, 0);
+                g_voices[i].osc->amp = 1.0f;
+                g_voices[i].osc->freq = 440.0f;
+            }
+            if (!g_voices[i].env) {
+                sp_adsr_create(&g_voices[i].env);
+                sp_adsr_init(g_sp, g_voices[i].env);
+            }
+            // Sync env params
+            g_voices[i].env->atk = g_env_atk;
+            g_voices[i].env->dec = g_env_dec;
+            g_voices[i].env->sus = g_env_sus;
+            g_voices[i].env->rel = g_env_rel;
         }
+    }
+
+    void free_all_voices() {
+        for (int i = 0; i < MAX_VOICES; ++i) {
+            if (g_voices[i].osc) { sp_osc_destroy(&g_voices[i].osc); }
+            if (g_voices[i].env) { sp_adsr_destroy(&g_voices[i].env); }
+            g_voices[i] = Voice{};
+        }
+    }
+
+    int find_free_voice() {
+        for (int i = 0; i < g_poly_n; ++i) {
+            if (!g_voices[i].active && g_voices[i].gate <= 0.0f) return i;
+        }
+        // steal round robin
+        int idx = g_voice_rr++ % g_poly_n;
+        return idx;
     }
 }
 
@@ -86,15 +131,19 @@ void synth_init(int sample_rate, int table_size) {
     g_sp->sr = sample_rate;
     g_table_size = table_size > 64 ? table_size : 2048;
     rebuild_table_sine();
-    init_osc_if_needed();
+    g_master_amp = 0.4f;
+    g_env_atk = 0.01f; g_env_dec = 0.1f; g_env_sus = 0.8f; g_env_rel = 0.2f;
+    g_poly_n = g_poly_n < 1 ? 1 : (g_poly_n > MAX_VOICES ? MAX_VOICES : g_poly_n);
+    init_voices_if_needed();
 }
 
 void synth_set_freq(float freq) {
-    if (g_osc) g_osc->freq = freq;
+    // Set all active voices to the same freq (legacy support)
+    for (int i = 0; i < g_poly_n; ++i) if (g_voices[i].osc) g_voices[i].osc->freq = freq;
 }
 
 void synth_set_amp(float amp) {
-    if (g_osc) g_osc->amp = amp;
+    g_master_amp = amp;
 }
 
 void synth_set_wave(int type) {
@@ -120,48 +169,82 @@ void synth_set_wave(int type) {
             rebuild_table_sine();
             break;
     }
-    // Re-init osc with new table to be safe
-    if (g_osc) {
-        float amp = g_osc->amp;
-        float freq = g_osc->freq;
-        sp_osc_destroy(&g_osc);
-        sp_osc_create(&g_osc);
-        sp_osc_init(g_sp, g_osc, g_ft, 0);
-        g_osc->amp = amp;
-        g_osc->freq = freq;
-    } else {
-        init_osc_if_needed();
+    // Re-init voice oscillators with new table
+    for (int i = 0; i < g_poly_n; ++i) {
+        if (g_voices[i].osc) {
+            float amp = g_voices[i].osc->amp;
+            float freq = g_voices[i].osc->freq;
+            sp_osc_destroy(&g_voices[i].osc);
+            sp_osc_create(&g_voices[i].osc);
+            sp_osc_init(g_sp, g_voices[i].osc, g_ft, 0);
+            g_voices[i].osc->amp = amp;
+            g_voices[i].osc->freq = freq;
+        }
     }
 }
 
 void synth_render(float* out_ptr, int frames) {
-    if (!out_ptr || !g_sp || !g_osc) return;
+    if (!out_ptr || !g_sp) return;
+    float zero = 0.0f, one = 1.0f;
     for (int i = 0; i < frames; ++i) {
-        float out = 0.0f;
-        sp_osc_compute(g_sp, g_osc, nullptr, &out);
-        out_ptr[i] = out;
+        float mix = 0.0f;
+        for (int v = 0; v < g_poly_n; ++v) {
+            Voice &vc = g_voices[v];
+            if (!vc.active && vc.gate <= 0.f) continue;
+            float s = 0.0f;
+            if (vc.osc) sp_osc_compute(g_sp, vc.osc, nullptr, &s);
+            float gate_in = vc.gate > 0.f ? one : zero;
+            float env = 0.0f;
+            if (vc.env) sp_adsr_compute(g_sp, vc.env, &gate_in, &env);
+            mix += s * env * (vc.vel * g_master_amp);
+            // Auto-deactivate if gate is off and env is near zero
+            if (vc.gate <= 0.f && env < 1e-4f) {
+                vc.active = false;
+                vc.midi = -1;
+                vc.vel = 0.f;
+            }
+        }
+        out_ptr[i] = mix;
     }
 }
 
 void synth_note_on(int midi_note, float velocity) {
     ensure_sp();
-    init_osc_if_needed();
+    init_voices_if_needed();
     float freq = sp_midi2cps(static_cast<float>(midi_note));
-    if (g_osc) {
-        g_osc->freq = freq;
-        g_osc->amp = velocity <= 0.f ? 0.f : (velocity > 1.f ? 1.f : velocity) * 0.5f;
+    int idx = find_free_voice();
+    Voice &vc = g_voices[idx];
+    if (vc.osc) vc.osc->freq = freq;
+    // Update envelope params in case globals changed
+    if (vc.env) {
+        vc.env->atk = g_env_atk;
+        vc.env->dec = g_env_dec;
+        vc.env->sus = g_env_sus;
+        vc.env->rel = g_env_rel;
+    }
+    vc.midi = midi_note;
+    vc.vel = (velocity <= 0.f ? 0.f : (velocity > 1.f ? 1.f : velocity));
+    vc.gate = 1.0f;
+    vc.active = true;
+}
+
+void synth_note_off_midi(int midi_note) {
+    for (int i = 0; i < g_poly_n; ++i) {
+        if (g_voices[i].active && g_voices[i].midi == midi_note) {
+            g_voices[i].gate = 0.0f;
+            // remain active until envelope releases
+        }
     }
 }
 
 void synth_note_off() {
-    if (g_osc) g_osc->amp = 0.0f;
+    for (int i = 0; i < g_poly_n; ++i) {
+        if (g_voices[i].active) g_voices[i].gate = 0.0f;
+    }
 }
 
 void synth_shutdown() {
-    if (g_osc) {
-        sp_osc_destroy(&g_osc);
-        g_osc = nullptr;
-    }
+    free_all_voices();
     if (g_ft) {
         sp_ftbl_destroy(&g_ft);
         g_ft = nullptr;
@@ -174,3 +257,23 @@ void synth_shutdown() {
 
 } // extern "C"
 
+extern "C" {
+// Additional controls
+void synth_set_env(float atk, float dec, float sus, float rel) {
+    g_env_atk = atk; g_env_dec = dec; g_env_sus = sus; g_env_rel = rel;
+    for (int i = 0; i < g_poly_n; ++i) {
+        if (g_voices[i].env) {
+            g_voices[i].env->atk = g_env_atk;
+            g_voices[i].env->dec = g_env_dec;
+            g_voices[i].env->sus = g_env_sus;
+            g_voices[i].env->rel = g_env_rel;
+        }
+    }
+}
+
+void synth_set_poly(int n) {
+    if (n < 1) n = 1; if (n > MAX_VOICES) n = MAX_VOICES;
+    g_poly_n = n;
+    init_voices_if_needed();
+}
+}

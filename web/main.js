@@ -61,14 +61,12 @@ async function init() {
   };
 
   const pressed = new Set();
-  const order = []; // stack of currently pressed notes (midi values)
-  let current = null;
 
   function noteOn(midi, velocity = 1.0) {
     node.port.postMessage({ type: 'note_on', midi, velocity });
   }
-  function noteOff() {
-    node.port.postMessage({ type: 'note_off' });
+  function noteOff(midi) {
+    node.port.postMessage({ type: 'note_off', midi });
   }
 
   async function ensureRunning() {
@@ -82,8 +80,6 @@ async function init() {
     if (pressed.has(key)) return; // ignore repeats
     pressed.add(key);
     const midi = KEY_TO_MIDI[key];
-    order.push(midi);
-    current = midi;
     await ensureRunning();
     noteOn(midi, 1.0);
     // highlight visual key
@@ -98,17 +94,7 @@ async function init() {
     if (!pressed.has(key)) return;
     pressed.delete(key);
     const midi = KEY_TO_MIDI[key];
-    // remove from order stack (remove all occurrences, keep order)
-    for (let i = order.length - 1; i >= 0; i--) if (order[i] === midi) order.splice(i, 1);
-    if (current === midi) {
-      if (order.length > 0) {
-        current = order[order.length - 1];
-        noteOn(current, 1.0);
-      } else {
-        current = null;
-        noteOff();
-      }
-    }
+    noteOff(midi);
     // unhighlight visual key
     const el = document.querySelector(`.key[data-key="${CSS.escape(key)}"]`);
     if (el) el.classList.remove('down');
@@ -127,12 +113,32 @@ async function init() {
       noteOn(midi, 1.0);
       const up = () => {
         el.classList.remove('down');
-        noteOff();
+        noteOff(midi);
         window.removeEventListener('mouseup', up);
       };
       window.addEventListener('mouseup', up);
     });
   }
+
+  // Envelope controls
+  const atk = document.getElementById('atk');
+  const dec = document.getElementById('dec');
+  const sus = document.getElementById('sus');
+  const rel = document.getElementById('rel');
+  function sendEnv() {
+    if (!atk || !dec || !sus || !rel) return;
+    node.port.postMessage({ type: 'env', attack: +atk.value, decay: +dec.value, sustain: +sus.value, release: +rel.value });
+  }
+  [atk, dec, sus, rel].forEach(el => el && el.addEventListener('input', sendEnv));
+
+  // Polyphony control
+  const poly = document.getElementById('poly');
+  if (poly) poly.addEventListener('input', () => {
+    const n = parseInt(poly.value,10)|0;
+    node.port.postMessage({ type: 'poly', value: n });
+    const pv = document.getElementById('polyVal');
+    if (pv) pv.textContent = `${n} voices`;
+  });
 
   // Explicit start button for autoplay policies
   const startBtn = document.getElementById('start');
