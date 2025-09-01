@@ -294,6 +294,84 @@ async function init() {
   // Initialize range based on default destination
   updateLfoRange();
 
+  // ----- Presets (stored in a cookie as JSON) -----
+  const PRESET_COOKIE = 'wt_presets';
+  function readCookie(name) {
+    const parts = (document.cookie || '').split(';').map(s => s.trim());
+    for (const p of parts) if (p.startsWith(name + '=')) return decodeURIComponent(p.slice(name.length + 1));
+    return '';
+  }
+  function writeCookie(name, value, days = 3650) {
+    const d = new Date(); d.setTime(d.getTime() + (days*24*60*60*1000));
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/`;
+  }
+  function loadPresetMap() {
+    try { const raw = readCookie(PRESET_COOKIE); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+  }
+  function savePresetMap(map) { writeCookie(PRESET_COOKIE, JSON.stringify(map)); }
+
+  function collectState() {
+    return {
+      wave1: wave1?.value, wave2: wave2?.value,
+      det1: det1?.value, det2: det2?.value,
+      gain1: gain1?.value, gain2: gain2?.value,
+      fm1car: fm1car?.value, fm1mod: fm1mod?.value, fm1idx: fm1idx?.value,
+      fm2car: fm2car?.value, fm2mod: fm2mod?.value, fm2idx: fm2idx?.value,
+      fc: fc?.value, res: res?.value, famt: famt?.value,
+      fatk: fatk?.value, fdec: fdec?.value, fsus: fsus?.value, frel: frel?.value,
+      atk: atk?.value, dec: dec?.value, sus: sus?.value, rel: rel?.value,
+      lforate: lfor?.value, lfodest: lfod?.value, lfoamnt: lfoa?.value,
+      poly: poly?.value, master: master?.value,
+    };
+  }
+
+  function applyState(s) {
+    if (!s) return;
+    const set = (el, v) => { if (el != null && v != null) el.value = String(v); };
+    set(wave1, s.wave1); set(wave2, s.wave2);
+    set(det1, s.det1); set(det2, s.det2);
+    set(gain1, s.gain1); set(gain2, s.gain2);
+    set(fm1car, s.fm1car); set(fm1mod, s.fm1mod); set(fm1idx, s.fm1idx);
+    set(fm2car, s.fm2car); set(fm2mod, s.fm2mod); set(fm2idx, s.fm2idx);
+    set(fc, s.fc); set(res, s.res); set(famt, s.famt);
+    set(fatk, s.fatk); set(fdec, s.fdec); set(fsus, s.fsus); set(frel, s.frel);
+    set(atk, s.atk); set(dec, s.dec); set(sus, s.sus); set(rel, s.rel);
+    set(lfor, s.lforate); set(lfod, s.lfodest); set(lfoa, s.lfoamnt);
+    set(poly, s.poly); set(master, s.master);
+    // Apply
+    updateFmVisibility();
+    sendOsc1(); sendOsc2();
+    sendFilter(); if (famt) famt.dispatchEvent(new Event('input'));
+    sendFenv(); sendEnvAndUpdate();
+    updateLfoRange(); sendLfo();
+    if (poly) poly.dispatchEvent(new Event('input'));
+    if (master) master.dispatchEvent(new Event('input'));
+  }
+
+  function populatePresetSelect() {
+    if (!presetSelect) return;
+    const map = loadPresetMap();
+    presetSelect.innerHTML = '<option value="">— Select preset —</option>';
+    Object.keys(map).sort().forEach(name => {
+      const opt = document.createElement('option'); opt.value = name; opt.textContent = name; presetSelect.appendChild(opt);
+    });
+  }
+
+  if (presetSelect) {
+    populatePresetSelect();
+    presetSelect.addEventListener('change', () => {
+      const name = presetSelect.value; const map = loadPresetMap();
+      if (name && map[name]) applyState(map[name]);
+    });
+  }
+  if (savePresetBtn) {
+    savePresetBtn.addEventListener('click', () => {
+      const name = prompt('Preset name:'); if (!name) return;
+      const map = loadPresetMap(); map[name] = collectState(); savePresetMap(map);
+      populatePresetSelect(); if (presetSelect) presetSelect.value = name;
+    });
+  }
+
   // Amp ADSR readouts
   function sendEnvAndUpdate() {
     sendEnv();
