@@ -52,22 +52,30 @@ async function init() {
   const wave2 = document.getElementById('wave2');
   const det1 = document.getElementById('det1');
   const det2 = document.getElementById('det2');
+  const gain1 = document.getElementById('gain1');
+  const gain2 = document.getElementById('gain2');
   function sendOsc1() {
     const w = wave1 ? (parseInt(wave1.value,10)|0) : 0;
     const d = det1 ? (+det1.value) : 0;
-    node.port.postMessage({ type: 'osc1', wave: w, detune: d });
+    const g = gain1 ? (+gain1.value) : undefined;
+    node.port.postMessage({ type: 'osc1', wave: w, detune: d, gain: g });
     const dv = document.getElementById('det1Val'); if (dv) dv.textContent = `${d.toFixed(2)} st`;
+    const gv = document.getElementById('gain1Val'); if (gv && gain1) gv.textContent = `${(+gain1.value).toFixed(2)}`;
   }
   function sendOsc2() {
     const w = wave2 ? (parseInt(wave2.value,10)|0) : 0;
     const d = det2 ? (+det2.value) : 0;
-    node.port.postMessage({ type: 'osc2', wave: w, detune: d });
+    const g = gain2 ? (+gain2.value) : undefined;
+    node.port.postMessage({ type: 'osc2', wave: w, detune: d, gain: g });
     const dv = document.getElementById('det2Val'); if (dv) dv.textContent = `${d.toFixed(2)} st`;
+    const gv = document.getElementById('gain2Val'); if (gv && gain2) gv.textContent = `${(+gain2.value).toFixed(2)}`;
   }
   if (wave1) wave1.addEventListener('change', sendOsc1);
   if (wave2) wave2.addEventListener('change', sendOsc2);
   if (det1) det1.addEventListener('input', sendOsc1);
   if (det2) det2.addEventListener('input', sendOsc2);
+  if (gain1) gain1.addEventListener('input', sendOsc1);
+  if (gain2) gain2.addEventListener('input', sendOsc2);
 
   // Piano keyboard mapping starting at 'A' for C4: A W S E D F T G Y H U J K
   const KEY_TO_MIDI = { 'a':60,'w':61,'s':62,'e':63,'d':64,'f':65,'t':66,'g':67,'y':68,'h':69,'u':70,'j':71,'k':72 };
@@ -146,6 +154,14 @@ async function init() {
     node.port.postMessage({ type: 'poly', value: n });
     const pv = document.getElementById('polyVal');
     if (pv) pv.textContent = `${n} voices`;
+  });
+
+  // Master gain control
+  const master = document.getElementById('master');
+  if (master) master.addEventListener('input', () => {
+    const val = +master.value;
+    node.port.postMessage({ type: 'amp', value: val });
+    const mv = document.getElementById('masterVal'); if (mv) mv.textContent = `${val.toFixed(2)}`;
   });
 
   // Filter controls

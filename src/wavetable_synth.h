@@ -47,6 +47,8 @@ void synth_set_wave1(int type);
 void synth_set_wave2(int type);
 void synth_set_detune1(float semi);
 void synth_set_detune2(float semi);
+void synth_set_gain1(float gain);
+void synth_set_gain2(float gain);
 
 // Cleanup resources
 void synth_shutdown();

@@ -25,12 +25,14 @@ class SynthProcessor extends AudioWorkletProcessor {
           case 'osc1': {
             if (typeof m.wave === 'number') this.mod.ccall('synth_set_wave1', 'void', ['number'], [m.wave|0]);
             if (typeof m.detune === 'number') this.mod.ccall('synth_set_detune1', 'void', ['number'], [m.detune]);
+            if (typeof m.gain === 'number') this.mod.ccall('synth_set_gain1', 'void', ['number'], [m.gain]);
             this.port.postMessage({ type: 'log', msg: `osc1 -> wave:${m.wave} det:${m.detune}` });
             break;
           }
           case 'osc2': {
             if (typeof m.wave === 'number') this.mod.ccall('synth_set_wave2', 'void', ['number'], [m.wave|0]);
             if (typeof m.detune === 'number') this.mod.ccall('synth_set_detune2', 'void', ['number'], [m.detune]);
+            if (typeof m.gain === 'number') this.mod.ccall('synth_set_gain2', 'void', ['number'], [m.gain]);
             this.port.postMessage({ type: 'log', msg: `osc2 -> wave:${m.wave} det:${m.detune}` });
             break;
           }

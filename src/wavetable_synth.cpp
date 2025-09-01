@@ -38,6 +38,8 @@ namespace {
     int g_wave2 = 0;
     float g_detune1 = 0.0f;
     float g_detune2 = 0.0f;
+    float g_gain1 = 0.5f;
+    float g_gain2 = 0.5f;
 
     struct Voice {
         sp_osc* osc1 = nullptr;
@@ -240,7 +242,7 @@ void synth_render(float* out_ptr, int frames) {
                 vc.osc2->freq = base * pitch_mul * det2;
                 sp_osc_compute(g_sp, vc.osc2, nullptr, &s2);
             }
-            float s = (s1 + s2) * 0.5f;
+            float s = s1 * g_gain1 + s2 * g_gain2;
             float gate_in = vc.gate > 0.f ? one : zero;
             // Filter envelope
             float fenv = 0.0f;
@@ -409,4 +411,6 @@ void synth_set_wave2(int type) {
 }
 void synth_set_detune1(float semi) { g_detune1 = semi; }
 void synth_set_detune2(float semi) { g_detune2 = semi; }
+void synth_set_gain1(float g) { g_gain1 = g; }
+void synth_set_gain2(float g) { g_gain2 = g; }
 }
