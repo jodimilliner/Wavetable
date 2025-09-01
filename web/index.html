@@ -9,7 +9,8 @@
       html,body{height:100%}
       body{background:var(--bg);color:var(--text);margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; padding:16px;}
       .frame{max-width:1100px;margin:24px auto;padding:16px 16px 28px;background:linear-gradient(180deg,#222,#1a1a1a);border:2px solid #000;box-shadow:0 10px 30px rgba(0,0,0,.4),inset 0 0 0 1px #333;border-radius:6px}
-      .header{display:flex;align-items:baseline;justify-content:space-between;padding:6px 8px 14px;border-bottom:1px solid #333;margin-bottom:12px}
+      .header{position:relative;display:flex;align-items:baseline;justify-content:space-between;padding:6px 8px 14px;border-bottom:1px solid #333;margin-bottom:12px}
+      .header-center{position:absolute;left:50%;transform:translateX(-50%);}
       .brand{font-weight:700;letter-spacing:.08em;font-size:22px}
       .model{color:var(--muted);font-size:14px;letter-spacing:.15em}
       .panels{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
@@ -38,11 +39,10 @@
     <div class="frame">
       <div class="header">
         <div class="brand">Prophet‑5</div>
-        <div class="model" style="display:flex; align-items:center; gap:8px;">
-          <!-- <label for="presetSelect" class="muted" style="width:auto;">Presets</label> -->
-          <select id="presetSelect" style="min-width:200px; background:#111; color:#e6e6e6; border:1px solid #333; border-radius:4px; padding:6px 8px;"></select>
-          <span class="model">Wavetable | Soundpipe + WASM</span>
+        <div class="header-center">
+          <select id="presetSelect"></select>
         </div>
+        <div class="model">Wavetable | Soundpipe + WASM</div>
       </div>
       <div class="panels">
         <div class="panel" style="grid-column: span 4;">
