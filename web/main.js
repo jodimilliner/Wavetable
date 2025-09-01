@@ -96,6 +96,17 @@ async function init() {
   if (wave2) wave2.addEventListener('change', sendOsc2);
   if (det1) det1.addEventListener('input', sendOsc1);
   if (det2) det2.addEventListener('input', sendOsc2);
+
+  // Toggle FM controls visibility based on wave selections
+  function updateFmVisibility() {
+    const w1 = wave1 ? (parseInt(wave1.value,10)|0) : 0;
+    const w2 = wave2 ? (parseInt(wave2.value,10)|0) : 0;
+    document.querySelectorAll('.fm1').forEach(el => { el.style.display = (w1 === 4 ? 'flex' : 'none');});
+    document.querySelectorAll('.fm2').forEach(el => { el.style.display = (w2 === 4 ? 'flex' : 'none');});
+  }
+  if (wave1) wave1.addEventListener('change', updateFmVisibility);
+  if (wave2) wave2.addEventListener('change', updateFmVisibility);
+  updateFmVisibility();
   if (gain1) gain1.addEventListener('input', sendOsc1);
   if (gain2) gain2.addEventListener('input', sendOsc2);
   if (fm1car) fm1car.addEventListener('input', sendOsc1);
@@ -318,16 +329,6 @@ async function init() {
 }
 
 window.addEventListener('load', init);
-  // Toggle FM controls visibility based on wave selections
-  function updateFmVisibility() {
-    const w1 = wave1 ? (parseInt(wave1.value,10)|0) : 0;
-    const w2 = wave2 ? (parseInt(wave2.value,10)|0) : 0;
-    document.querySelectorAll('.fm1').forEach(el => { el.style.display = (w1 === 4 ? 'flex' : 'none');});
-    document.querySelectorAll('.fm2').forEach(el => { el.style.display = (w2 === 4 ? 'flex' : 'none');});
-  }
-  if (wave1) wave1.addEventListener('change', updateFmVisibility);
-  if (wave2) wave2.addEventListener('change', updateFmVisibility);
-  updateFmVisibility();
 
   // ----- Presets (stored in a cookie as JSON) -----
   const PRESET_COOKIE = 'wt_presets';
