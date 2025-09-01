@@ -1,0 +1,92 @@
+<div class="wavetable frame">
+  <div class="header">
+    <div class="brand">Prophet‑5</div>
+    <div class="header-center">
+      <select id="presetSelect"></select>
+    </div>
+    <div class="model">Wavetable | Soundpipe + WASM</div>
+  </div>
+  <div class="panels">
+    <div class="panel" style="grid-column: span 4;">
+      <h3>Osc 1</h3>
+      <div class="row"><label>Wave</label><select id="wave1"><option value="0">Sine</option><option value="1">Saw</option><option value="2">Square</option><option value="3">Triangle</option><option value="4">FM</option></select></div>
+      <div class="row"><label>Detune</label><input id="det1" type="range" min="-24" max="24" step="0.01" value="0" /><span id="det1Val" class="kv">0.00 st</span></div>
+      <div class="row"><label>Gain</label><input id="gain1" type="range" min="0" max="1.5" step="0.01" value="0.5" /><span id="gain1Val" class="kv">0.50</span></div>
+      <div class="row fm1"><label>FM Car</label><input id="fm1car" type="range" min="0.1" max="8" step="0.01" value="1.0" /><span id="fm1carVal" class="kv">1.00</span></div>
+      <div class="row fm1"><label>FM Mod</label><input id="fm1mod" type="range" min="0.1" max="8" step="0.01" value="1.0" /><span id="fm1modVal" class="kv">1.00</span></div>
+      <div class="row fm1"><label>FM Index</label><input id="fm1idx" type="range" min="0" max="10" step="0.01" value="2.0" /><span id="fm1idxVal" class="kv">2.00</span></div>
+    </div>
+    <div class="panel" style="grid-column: span 4;">
+      <h3>Osc 2</h3>
+      <div class="row"><label>Wave</label><select id="wave2"><option value="0">Sine</option><option value="1">Saw</option><option value="2">Square</option><option value="3">Triangle</option><option value="4">FM</option></select></div>
+      <div class="row"><label>Detune</label><input id="det2" type="range" min="-24" max="24" step="0.01" value="0" /><span id="det2Val" class="kv">0.00 st</span></div>
+      <div class="row"><label>Gain</label><input id="gain2" type="range" min="0" max="1.5" step="0.01" value="0.5" /><span id="gain2Val" class="kv">0.50</span></div>
+      <div class="row fm2"><label>FM Car</label><input id="fm2car" type="range" min="0.1" max="8" step="0.01" value="1.0" /><span id="fm2carVal" class="kv">1.00</span></div>
+      <div class="row fm2"><label>FM Mod</label><input id="fm2mod" type="range" min="0.1" max="8" step="0.01" value="1.0" /><span id="fm2modVal" class="kv">1.00</span></div>
+      <div class="row fm2"><label>FM Index</label><input id="fm2idx" type="range" min="0" max="10" step="0.01" value="2.0" /><span id="fm2idxVal" class="kv">2.00</span></div>
+    </div>
+    <div class="panel" style="grid-column: span 4;">
+      <h3>Poly & Master</h3>
+      <div class="row"><label>Poly</label><input id="poly" type="range" min="1" max="16" step="1" value="8" /><span id="polyVal" class="kv">8 voices</span></div>
+      <div class="row"><label>Master</label><input id="master" type="range" min="0" max="1.5" step="0.01" value="0.40" /><span id="masterVal" class="kv">0.40</span></div>
+    </div>
+    <div class="panel" style="grid-column: span 5;">
+      <h3>Filter</h3>
+      <div class="row"><label>Cutoff</label><input id="fc" type="range" min="20" max="12000" step="1" value="1200" /><span id="fcVal" class="kv">1.2 kHz</span></div>
+      <div class="row"><label>Resonance</label><input id="res" type="range" min="0" max="1" step="0.01" value="0.30" /><span id="resVal" class="kv">0.30</span></div>
+      <div class="row"><label>Env Amt</label><input id="famt" type="range" min="-8000" max="8000" step="1" value="2000" /><span id="famtVal" class="kv">+2000 Hz</span></div>
+    </div>
+    <div class="panel" style="grid-column: span 4;">
+      <h3>LFO (Pitch)</h3>
+      <div class="row"><label>Rate</label><input id="lforate" type="range" min="0" max="20" step="0.01" value="5" /><span id="lforVal" class="kv">5.00 Hz</span></div>
+      <div class="row"><label>Destination</label>
+        <select id="lfodest">
+          <option value="0">Master Pitch</option>
+          <option value="1">Filter Cutoff</option>
+          <option value="2">Master Gain</option>
+          <option value="3">Resonance</option>
+          <option value="4">Osc1 Gain</option>
+          <option value="5">Osc2 Gain</option>
+          <option value="6">FM1 Index</option>
+          <option value="7">FM2 Index</option>
+        </select>
+      </div>
+      <div class="row"><label>Amount</label><input id="lfoamnt" type="range" min="-12" max="12" step="0.1" value="0" /><span id="lfoaVal" class="kv">0.0 st</span></div>
+    </div>
+    <div class="panel" style="grid-column: span 6;">
+      <h3>Amp Envelope</h3>
+      <div class="row"><label>Attack</label><input id="atk" type="range" min="0" max="2" step="0.005" value="0.01" /><span id="atkVal" class="kv">0.01 s</span></div>
+      <div class="row"><label>Decay</label><input id="dec" type="range" min="0" max="2" step="0.005" value="0.10" /><span id="decVal" class="kv">0.10 s</span></div>
+      <div class="row"><label>Sustain</label><input id="sus" type="range" min="0" max="1" step="0.01" value="0.80" /><span id="susVal" class="kv">0.80</span></div>
+      <div class="row"><label>Release</label><input id="rel" type="range" min="0" max="3" step="0.005" value="0.20" /><span id="relVal" class="kv">0.20 s</span></div>
+    </div>
+    <div class="panel" style="grid-column: span 6;">
+      <h3>Filter Envelope</h3>
+      <div class="row"><label>Attack</label><input id="fatk" type="range" min="0" max="2" step="0.005" value="0.005" /><span id="fatkVal" class="kv">0.005 s</span></div>
+      <div class="row"><label>Decay</label><input id="fdec" type="range" min="0" max="2" step="0.005" value="0.150" /><span id="fdecVal" class="kv">0.150 s</span></div>
+      <div class="row"><label>Sustain</label><input id="fsus" type="range" min="0" max="1" step="0.01" value="0.00" /><span id="fsusVal" class="kv">0.00</span></div>
+      <div class="row"><label>Release</label><input id="frel" type="range" min="0" max="3" step="0.005" value="0.250" /><span id="frelVal" class="kv">0.250 s</span></div>
+    </div>
+  </div>
+  <div class="kbd">
+    <div class="keys" id="keys">
+      <div class="whites">
+        <div class="white key" data-key="a" data-midi="60"><div class="keylabel">A</div></div>
+        <div class="white key" data-key="s" data-midi="62"><div class="keylabel">S</div></div>
+        <div class="white key" data-key="d" data-midi="64"><div class="keylabel">D</div></div>
+        <div class="white key" data-key="f" data-midi="65"><div class="keylabel">F</div></div>
+        <div class="white key" data-key="g" data-midi="67"><div class="keylabel">G</div></div>
+        <div class="white key" data-key="h" data-midi="69"><div class="keylabel">H</div></div>
+        <div class="white key" data-key="j" data-midi="71"><div class="keylabel">J</div></div>
+        <div class="white key" data-key="k" data-midi="72"><div class="keylabel">K</div></div>
+      </div>
+      <div class="black key" style="left:14%;" data-key="w" data-midi="61"></div>
+      <div class="black key" style="left:26.5%;" data-key="e" data-midi="63"></div>
+      <div class="black key" style="left:51.0%;" data-key="t" data-midi="66"></div>
+      <div class="black key" style="left:63.5%;" data-key="y" data-midi="68"></div>
+      <div class="black key" style="left:76.0%;" data-key="u" data-midi="70"></div>
+    </div>
+  </div>
+  <div style="margin-top:12px;" class="muted">Status: <span id="status"></span></div>
+  <div id="log" style="display:none;"></div>
+</div>
