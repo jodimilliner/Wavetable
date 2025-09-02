@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wavetable Demo</title>
     <link rel="stylesheet" href="wavetable.css" />
+    <script type="module" src="wasm-dsp-element.js"></script>
   </head>
   <body>
-    <div id="wavetable"></div>
-    <script src="wavetable.js"></script>
+    <wasm-dsp autostart gain="1.0"></wasm-dsp>
   </body>
 </html>

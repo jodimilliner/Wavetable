@@ -3,6 +3,11 @@
 import createSynthModule from '../dist/synth.js';
 
 class SynthProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      { name: 'gain', defaultValue: 1.0, minValue: 0.0, maxValue: 4.0 }
+    ];
+  }
   constructor() {
     super();
     this.ready = false;
@@ -131,7 +136,7 @@ class SynthProcessor extends AudioWorkletProcessor {
     });
   }
 
-  process(inputs, outputs) {
+  process(inputs, outputs, parameters) {
     const output = outputs[0];
     const frames = output[0].length;
 
@@ -153,7 +158,11 @@ class SynthProcessor extends AudioWorkletProcessor {
 
     // Copy mono to all output channels
     for (let i = 0; i < frames; i++) {
-      const s = heap[i];
+      const base = heap[i];
+      const g = (parameters && parameters.gain && parameters.gain.length)
+        ? (parameters.gain.length > 1 ? parameters.gain[i] : parameters.gain[0])
+        : 1.0;
+      const s = base * g;
       for (let ch = 0; ch < output.length; ch++) {
         output[ch][i] = s;
       }
